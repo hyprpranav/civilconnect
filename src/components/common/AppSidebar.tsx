@@ -69,8 +69,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       {/* Brand Header */}
       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-xs shrink-0 overflow-hidden p-0.5 border border-slate-700/50">
-            <img src="/mobile-logo.png" alt="CIVIL CONNECT Logo" className="w-full h-full object-contain" />
+          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-xs shrink-0 overflow-hidden p-0.5 border border-slate-200">
+            <img src="/ici-logo.jpg" alt="CIVIL CONNECT - ICI Logo" className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">

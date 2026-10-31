@@ -90,6 +90,17 @@
   background-repeat: no-repeat;
   opacity: 0.22;
   filter: contrast(1.05) brightness(1.0);
+  transition: background-image 0.3s ease-in-out;
+}
+
+/* Mobile phone view & narrowed window: use the tailored phone background */
+@media (max-width: 768px) {
+  .portal-bg-watermark {
+    background-image: url('/bgmobile.png');
+    background-size: cover;
+    background-position: center top;
+    opacity: 0.26;
+  }
 }
 
 /* Dashboard Glassmorphism: cards and panels are translucent with backdrop blur so the watermark is visible inside dashboards */

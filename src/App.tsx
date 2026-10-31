@@ -289,9 +289,9 @@ export const App: React.FC = () => {
                   </button>
                   <div className="flex items-center gap-2 min-w-0">
                     <img 
-                      src="/mobile-logo.png" 
-                      alt="CIVIL CONNECT" 
-                      className="w-8 h-8 rounded-lg object-contain bg-slate-900 shadow-xs shrink-0 p-0.5 border border-slate-700/50" 
+                      src="/ici-logo.jpg" 
+                      alt="CIVIL CONNECT - ICI Logo" 
+                      className="w-8 h-8 rounded-lg object-contain bg-white shadow-xs shrink-0 p-0.5 border border-slate-200" 
                     />
                     <div className="min-w-0">
                       <span className="text-xs font-bold text-slate-900 block leading-tight truncate">CIVIL CONNECT</span>

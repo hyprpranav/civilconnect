@@ -185,8 +185,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         </button>
 
         <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center mx-auto shadow-md mb-2 overflow-hidden p-1 border border-slate-700/50">
-            <img src="/mobile-logo.png" alt="CIVIL CONNECT Logo" className="w-full h-full object-contain" />
+          <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center mx-auto shadow-md mb-2 overflow-hidden p-1 border border-slate-200">
+            <img src="/ici-logo.jpg" alt="CIVIL CONNECT - ICI Logo" className="w-full h-full object-contain" />
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-blue-950 font-serif">
             CIVIL CONNECT
