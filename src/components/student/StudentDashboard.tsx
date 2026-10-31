@@ -25,6 +25,7 @@ import { MyProfileTab } from './MyProfileTab';
 import { ProfessionalProfileForm } from './ProfessionalProfileForm';
 import { StudentUpdatesTab } from './StudentUpdatesTab';
 import { StudentTeamsTab } from './StudentTeamsTab';
+import { getGradeBadgeColor } from '../common/InterviewEvaluationModal';
 
 interface StudentDashboardProps {
   user: UserAccount;
@@ -155,6 +156,109 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               </div>
             </div>
           </div>
+
+          {/* OFFICIAL 1-TO-1 INTERVIEW SCORECARD (Published by Admin) */}
+          {student.interviewEvaluation && student.interviewEvaluation.isPublishedToStudent && (
+            <div className="bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/30 rounded-2xl border-2 border-indigo-200/80 p-5 sm:p-6 shadow-sm space-y-5 animate-in fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-100 pb-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-700 to-indigo-600 text-white flex items-center justify-center shadow-md shrink-0">
+                    <Award className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 mb-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Official Faculty Assessment Published
+                    </div>
+                    <h2 className="text-lg font-bold font-serif text-slate-900">
+                      1-to-1 Interview & Performance Scorecard
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Evaluated by <strong className="text-slate-700">{student.interviewEvaluation.evaluatedByName}</strong> ({student.interviewEvaluation.evaluatorRole}) on {new Date(student.interviewEvaluation.evaluatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white/90 border border-indigo-200 rounded-2xl p-3 px-5 text-right flex items-center sm:flex-col justify-between sm:justify-center shadow-2xs shrink-0">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Overall Score</span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-3xl font-black text-indigo-950 font-mono">
+                      {student.interviewEvaluation.totalMarks}
+                    </span>
+                    <span className="text-xs text-slate-400 font-semibold">/ {student.interviewEvaluation.maxTotalMarks || 100}</span>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border mt-1 ${getGradeBadgeColor(student.interviewEvaluation.grade)}`}>
+                    Grade: {student.interviewEvaluation.grade}
+                  </span>
+                </div>
+              </div>
+
+              {/* 6 Competencies Breakdown */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 font-serif">
+                  Competency Assessment Breakdown
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {student.interviewEvaluation.criteria.map((c, i) => {
+                    const ratio = Math.round((c.awardedMarks / c.maxMarks) * 100);
+                    return (
+                      <div key={c.id || i} className="bg-white p-3.5 rounded-xl border border-indigo-100 shadow-2xs space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-800 line-clamp-1">{c.name}</span>
+                          <span className="font-mono font-bold text-indigo-900 shrink-0">
+                            {c.awardedMarks} / {c.maxMarks}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              ratio >= 80 ? 'bg-emerald-500' : ratio >= 60 ? 'bg-blue-600' : 'bg-amber-500'
+                            }`}
+                            style={{ width: `${ratio}%` }}
+                          />
+                        </div>
+                        {c.remarks && (
+                          <p className="text-[10px] text-slate-500 italic line-clamp-1">
+                            Note: {c.remarks}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Recommendations & Feedback */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                {student.interviewEvaluation.recommendedRole && (
+                  <div className="bg-indigo-50/50 p-3.5 rounded-xl border border-indigo-100 text-xs space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-indigo-800 tracking-wider">Recommended Project Squad Role</span>
+                    <div className="font-bold text-indigo-950 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-indigo-600" />
+                      {student.interviewEvaluation.recommendedRole}
+                    </div>
+                  </div>
+                )}
+
+                {student.interviewEvaluation.strengths && (
+                  <div className="bg-emerald-50/50 p-3.5 rounded-xl border border-emerald-100 text-xs space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-emerald-800 tracking-wider">Identified Key Strengths</span>
+                    <div className="font-semibold text-emerald-950">
+                      {student.interviewEvaluation.strengths}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {student.interviewEvaluation.generalFeedback && (
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 text-xs space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Faculty Feedback & Remarks</span>
+                  <p className="text-slate-700 leading-relaxed">
+                    {student.interviewEvaluation.generalFeedback}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Section 1: Qualifications & Assessment Progress ("what was he doing does he filled those details") */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">

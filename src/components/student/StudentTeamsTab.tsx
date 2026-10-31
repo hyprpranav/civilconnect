@@ -32,9 +32,11 @@ export const StudentTeamsTab: React.FC<StudentTeamsTabProps> = ({ currentStudent
         const stats = await teamService.getCohortSkillAnalytics();
         setSkillStats(stats);
         const allTeams = await storageService.getTeams();
-        setTeams(allTeams);
+        // Students can only see confirmed and finalised teams, never drafts
+        const publicTeams = allTeams.filter(t => t.status !== 'Draft');
+        setTeams(publicTeams);
 
-        const assigned = allTeams.find(t => 
+        const assigned = publicTeams.find(t => 
           t.members.some(m => m.studentId.toLowerCase() === currentStudent.id.toLowerCase())
         );
         setMyTeam(assigned || null);

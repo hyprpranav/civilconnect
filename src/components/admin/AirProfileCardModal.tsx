@@ -31,6 +31,7 @@ interface AirProfileCardModalProps {
   student: StudentProfile | null;
   onClose: () => void;
   onEdit?: (student: StudentProfile) => void;
+  onInterview?: (student: StudentProfile) => void;
   onStudentUpdated?: (updated: StudentProfile) => void;
   onVerifyStudent?: (student: StudentProfile) => void;
   canEditPhoto?: boolean;
@@ -40,6 +41,7 @@ export const AirProfileCardModal: React.FC<AirProfileCardModalProps> = ({
   student,
   onClose,
   onEdit,
+  onInterview,
   onStudentUpdated,
   onVerifyStudent,
   canEditPhoto = true
@@ -537,6 +539,20 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
           </div>
 
           <div className="flex items-center gap-2">
+            {onInterview && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onInterview(student);
+                }}
+                className="px-3.5 py-1.5 text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl cursor-pointer transition-colors flex items-center gap-1.5"
+                title="Conduct 1-to-1 Interview Evaluation"
+              >
+                <Award className="w-3.5 h-3.5 text-purple-700" />
+                <span>Interview Marks</span>
+              </button>
+            )}
             {onEdit && (
               <button
                 type="button"

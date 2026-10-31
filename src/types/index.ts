@@ -145,6 +145,9 @@ export interface StudentProfile {
   teamStrengths?: TeamRolesAndStrengths;
   teamPreferences?: TeamPreferences;
   
+  // 1-to-1 Interview Evaluation
+  interviewEvaluation?: InterviewEvaluation;
+  
   // Status and Meta
   profileCompletionPercentage: number;
   profileStatus: 'draft' | 'pending_review' | 'verified' | 'needs_update';
@@ -153,6 +156,48 @@ export interface StudentProfile {
   createdAt: string;
   isArchived?: boolean;
   archivedAt?: string;
+}
+
+export interface InterviewCriterionMark {
+  id: string;
+  name: string;
+  category: string;
+  maxMarks: number;
+  awardedMarks: number;
+  remarks?: string;
+}
+
+export type InterviewGrade = 
+  | 'O (Outstanding)' 
+  | 'A+ (Excellent)' 
+  | 'A (Very Good)' 
+  | 'B+ (Good)' 
+  | 'B (Above Average)' 
+  | 'C (Pass)' 
+  | 'RA (Re-evaluate)';
+
+export interface InterviewEvaluation {
+  id: string;
+  studentId: string;
+  studentRegNo: string;
+  studentName: string;
+  evaluatedByUid: string;
+  evaluatedByName: string;
+  evaluatorRole: UserRole;
+  evaluatedAt: string;
+  lastUpdatedAt?: string;
+  criteria: InterviewCriterionMark[];
+  totalMarks: number;
+  maxTotalMarks: number;
+  percentage: number;
+  grade: InterviewGrade;
+  generalFeedback: string;
+  strengths?: string;
+  areasForImprovement?: string;
+  recommendedRole?: string;
+  isPublishedToStudent: boolean;
+  publishedAt?: string;
+  publishedBy?: string;
 }
 
 export type RequestCategory =
@@ -227,13 +272,20 @@ export interface TeamMember {
 
 export interface TeamFormation {
   id: string;
+  teamNumber?: string;
   teamName: string;
+  codeNumber?: string; // 6-digit institutional code e.g. "927624"
+  targetSize?: number;
   projectDomain: string;
   members: TeamMember[];
   targetCompetition?: string;
   createdBy: string;
+  creatorUid?: string;
+  creatorRole?: UserRole;
   createdAt: string;
-  status: 'Forming' | 'Confirmed' | 'Active' | 'Disbanded';
+  updatedAt?: string;
+  status: 'Draft' | 'Finalised' | 'Forming' | 'Confirmed' | 'Active' | 'Disbanded';
+  notes?: string;
 }
 
 export interface SystemSettings {

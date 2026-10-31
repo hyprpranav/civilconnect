@@ -272,6 +272,18 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
+                onClick={() => handleTabClick('teams')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'teams'
+                    ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <Layers className={`w-4 h-4 ${activeTab === 'teams' ? 'text-blue-600' : 'text-slate-400'}`} />
+                <span>Teams</span>
+              </button>
+
+              <button
                 onClick={() => handleTabClick('analytics')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'analytics'

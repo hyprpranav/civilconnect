@@ -18,6 +18,8 @@ import { AirProfileCardModal } from '../admin/AirProfileCardModal';
 import { StudentEditModal } from '../common/StudentEditModal';
 import { AnnouncementsManagerView } from '../common/AnnouncementsManagerView';
 import { PasswordChangeModal } from '../common/PasswordChangeModal';
+import { InterviewEvaluationModal } from '../common/InterviewEvaluationModal';
+import { TeamsManagerView } from '../common/TeamsManagerView';
 import { 
   Users, 
   Search, 
@@ -45,7 +47,9 @@ import {
   ShieldCheck, 
   Save, 
   GraduationCap, 
-  Sparkles 
+  Sparkles,
+  Award,
+  Layers
 } from 'lucide-react';
 
 interface OfficerDashboardProps {
@@ -67,20 +71,20 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   onTabChange,
   onUserUpdated
 }) => {
-  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements' | 'teams'>('students');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   React.useEffect(() => {
     if (externalTab) {
       if (externalTab === 'dashboard') {
         setActiveTab('students');
-      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff', 'profile', 'announcements'].includes(externalTab)) {
+      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff', 'profile', 'announcements', 'teams'].includes(externalTab)) {
         setActiveTab(externalTab as any);
       }
     }
   }, [externalTab]);
 
-  const handleTabChange = (tab: 'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile') => {
+  const handleTabChange = (tab: 'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements' | 'teams') => {
     setActiveTab(tab);
     onTabChange?.(tab);
   };
@@ -94,6 +98,7 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   // Selected student for detail modal
   const [viewingStudent, setViewingStudent] = useState<StudentProfile | null>(null);
   const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
+  const [evaluatingStudent, setEvaluatingStudent] = useState<StudentProfile | null>(null);
   const [isEditingInModal, setIsEditingInModal] = useState(false);
   const [modalEditPhone, setModalEditPhone] = useState('');
   const [modalEditEmail, setModalEditEmail] = useState('');
@@ -200,6 +205,24 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
     } catch (err: any) {
       setModalEditFeedback(err.message || 'Failed to save student edits.');
     }
+  };
+
+  const handleSaveInterviewEvaluation = async (updatedStudent: StudentProfile) => {
+    await storageService.saveStudent(updatedStudent);
+    await storageService.addAuditLog({
+      performedBy: user.uid,
+      performerName: user.name,
+      role: user.role,
+      action: `Interview Evaluation Saved by Faculty: ${updatedStudent.name} (${updatedStudent.interviewEvaluation?.totalMarks}/100 - ${updatedStudent.interviewEvaluation?.grade})`,
+      affectedCollection: 'students',
+      affectedRecordIds: [updatedStudent.id],
+      operationStatus: 'success',
+      details: `Evaluation recorded by staff. Published to student: ${updatedStudent.interviewEvaluation?.isPublishedToStudent ? 'YES' : 'NO'}`
+    });
+    if (viewingStudent?.id === updatedStudent.id) {
+      setViewingStudent(updatedStudent);
+    }
+    await onRefreshData();
   };
 
   // Filter students (Supports all 12 departments!)
@@ -613,6 +636,14 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
                             <span>View Card</span>
                           </button>
                           <button
+                            onClick={() => setEvaluatingStudent(s)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors cursor-pointer"
+                            title="Conduct 1-to-1 Interview & Evaluation Sheet (100 Marks)"
+                          >
+                            <Award className="w-3.5 h-3.5 text-purple-700" />
+                            <span>Interview</span>
+                          </button>
+                          <button
                             onClick={() => setEditingStudent(s)}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl transition-colors cursor-pointer"
                             title="Edit Student Details & Photo"
@@ -973,6 +1004,15 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
         />
       )}
 
+      {/* TAB: SQUAD & TEAMS MANAGEMENT (Officer View) */}
+      {activeTab === 'teams' && (
+        <TeamsManagerView
+          currentUser={user}
+          students={students}
+          onTeamUpdated={onRefreshData}
+        />
+      )}
+
       {/* ENHANCED STUDENT VIEW & VERIFY MODAL */}
       {/* Official Student Dossier • AIR Profile Card Modal (Identical to Admin Dashboard) */}
       <AirProfileCardModal
@@ -981,6 +1021,10 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
         onEdit={s => {
           setViewingStudent(null);
           setEditingStudent(s);
+        }}
+        onInterview={s => {
+          setViewingStudent(null);
+          setEvaluatingStudent(s);
         }}
         onStudentUpdated={async (updated) => {
           setViewingStudent(updated);
@@ -1003,6 +1047,17 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
         }}
         userRole="OFFICER"
       />
+
+      {/* 1-to-1 Interview & Performance Evaluation Sheet Modal */}
+      {evaluatingStudent && (
+        <InterviewEvaluationModal
+          student={evaluatingStudent}
+          currentUser={user}
+          isOpen={!!evaluatingStudent}
+          onClose={() => setEvaluatingStudent(null)}
+          onSave={handleSaveInterviewEvaluation}
+        />
+      )}
 
       {/* Password Change Modal */}
       <PasswordChangeModal

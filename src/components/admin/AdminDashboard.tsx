@@ -24,6 +24,8 @@ import { AdminStaffView } from './AdminStaffView';
 import { StudentEditModal } from '../common/StudentEditModal';
 import { PasswordChangeModal } from '../common/PasswordChangeModal';
 import { AnnouncementsManagerView } from '../common/AnnouncementsManagerView';
+import { InterviewEvaluationModal } from '../common/InterviewEvaluationModal';
+import { TeamsManagerView } from '../common/TeamsManagerView';
 import { 
   Users, 
   Search, 
@@ -33,6 +35,7 @@ import {
   Download, 
   Trash2, 
   Edit3, 
+  Award,
   Eye, 
   CheckCircle2, 
   XCircle, 
@@ -122,6 +125,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Selected student for viewing / editing
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
   const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
+  const [evaluatingStudent, setEvaluatingStudent] = useState<StudentProfile | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   // Bulk student selection for deletion or operations
@@ -510,6 +514,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     setSuggestedTeamDraft(null);
     loadAuxiliaryData();
+  };
+
+  const handleSaveInterviewEvaluation = async (updatedStudent: StudentProfile) => {
+    await storageService.saveStudent(updatedStudent);
+    await storageService.addAuditLog({
+      performedBy: user.uid,
+      performerName: user.name,
+      role: user.role,
+      action: `Interview Evaluation Saved: ${updatedStudent.name} (${updatedStudent.interviewEvaluation?.totalMarks}/100 - ${updatedStudent.interviewEvaluation?.grade})`,
+      affectedCollection: 'students',
+      affectedRecordIds: [updatedStudent.id],
+      operationStatus: 'success',
+      details: `Evaluation published to student: ${updatedStudent.interviewEvaluation?.isPublishedToStudent ? 'YES' : 'NO'}`
+    });
+    if (selectedStudent?.id === updatedStudent.id) {
+      setSelectedStudent(updatedStudent);
+    }
+    await onRefreshData();
   };
 
   // Export Table Data to CSV
@@ -931,6 +953,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
+                          onClick={() => setEvaluatingStudent(student)}
+                          className="p-1 text-purple-700 hover:text-purple-900 hover:bg-purple-50 rounded"
+                          title="1-to-1 Interview & Evaluation Sheet (100 Marks)"
+                        >
+                          <Award className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => setEditingStudent(student)}
                           className="p-1 text-slate-600 hover:text-blue-800"
                           title="Edit Details"
@@ -1246,122 +1275,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* TAB 5: INTELLIGENT TEAM FORMATION ENGINE */}
+      {/* TAB 5: SQUAD & TEAMS MANAGEMENT */}
       {activeTab === 'teams' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 font-serif flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-blue-700" />
-                  Intelligent Team Formation Engine (SIH & Hackathons)
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Algorithmic team composition matching 1 Leader, 2 Tech (Hardware/Software), 1 Research, and 1 Logistics/Operations lead.
-                </p>
-              </div>
-
-              <button
-                onClick={handleGenerateTeamSuggestion}
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 rounded-xl shadow-xs transition-colors shrink-0"
-              >
-                <Sparkles className="w-4 h-4 text-teal-300" />
-                Generate Complementary Team Draft
-              </button>
-            </div>
-
-            <div className="pt-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Project Domain / Problem Statement Focus:
-              </label>
-              <input
-                type="text"
-                value={teamDomainInput}
-                onChange={e => setTeamDomainInput(e.target.value)}
-                placeholder="e.g. Smart Cities, Green Structural Design, Disaster IoT"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"
-              />
-            </div>
-
-            {/* Generated Suggestion Draft */}
-            {suggestedTeamDraft && (
-              <div className="mt-4 bg-blue-50/60 border border-blue-200 rounded-2xl p-5 space-y-4 animate-in fade-in">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-blue-800 tracking-wider">Algorithmic Suggestion</span>
-                    <h4 className="text-base font-bold text-blue-950 font-serif">
-                      Proposed Team: {suggestedTeamDraft.teamName}
-                    </h4>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setSuggestedTeamDraft(null)}
-                      className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800"
-                    >
-                      Dismiss
-                    </button>
-                    <button
-                      onClick={handleConfirmTeam}
-                      className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-2xs"
-                    >
-                      Confirm & Register Team
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {suggestedTeamDraft.members.map((member, i) => (
-                    <div key={member.studentId} className="bg-white p-3.5 rounded-xl border border-slate-200 text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">{member.name}</span>
-                        {member.isLeader && (
-                          <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded">
-                            Team Leader
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[11px] font-mono text-blue-900">{member.registerNumber}</div>
-                      <div className="text-[11px] font-semibold text-teal-800">Assigned: {member.assignedRole}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Active Teams List */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-            <h4 className="text-sm font-bold text-slate-900 font-serif">
-              Registered Teams ({teams.length})
-            </h4>
-
-            {teams.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">No teams formed yet. Click "Generate Complementary Team Draft" above to begin.</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {teams.map(t => (
-                  <div key={t.id} className="border border-slate-200 rounded-xl p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h5 className="font-bold text-sm text-slate-900">{t.teamName}</h5>
-                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                        {t.status}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 font-medium">Domain: {t.projectDomain}</p>
-                    <div className="pt-2 border-t border-slate-100 space-y-1">
-                      {t.members.map(m => (
-                        <div key={m.studentId} className="flex items-center justify-between text-[11px]">
-                          <span>{m.name} ({m.registerNumber})</span>
-                          <span className="font-semibold text-slate-500">{m.assignedRole}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <TeamsManagerView
+          currentUser={user}
+          students={students}
+          onTeamUpdated={loadAuxiliaryData}
+        />
       )}
 
       {/* TAB 6: ANNOUNCEMENTS MANAGEMENT */}
@@ -1535,6 +1455,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           setSelectedStudent(null);
           setEditingStudent(s);
         }}
+        onInterview={s => {
+          setSelectedStudent(null);
+          setEvaluatingStudent(s);
+        }}
         onStudentUpdated={async (updated) => {
           setSelectedStudent(updated);
           await onRefreshData();
@@ -1556,6 +1480,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }}
         userRole={user.role === 'SUPER_ADMIN' ? 'ADMIN' : 'ADMIN'}
       />
+
+      {/* 1-to-1 Interview & Performance Evaluation Sheet Modal */}
+      {evaluatingStudent && (
+        <InterviewEvaluationModal
+          student={evaluatingStudent}
+          currentUser={user}
+          isOpen={!!evaluatingStudent}
+          onClose={() => setEvaluatingStudent(null)}
+          onSave={handleSaveInterviewEvaluation}
+        />
+      )}
 
       {/* Password Change Modal */}
       <PasswordChangeModal
