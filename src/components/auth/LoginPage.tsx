@@ -232,7 +232,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             <form className="space-y-4" onSubmit={handleSignIn}>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Register Number / Official Email
+                  Register Number / Email Address
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -242,7 +242,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     type="text"
                     value={identifier}
                     onChange={e => setIdentifier(e.target.value)}
-                    placeholder="e.g. 927625BEE062 or official email"
+                    placeholder="e.g. 927625BEE062 or any email (personal / official)"
                     className="w-full pl-9 pr-3 py-2.5 text-xs font-medium border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-800"
                     autoCapitalize="none"
                     autoCorrect="off"
@@ -250,7 +250,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   />
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Single login for Students, Officers, and Admins.
+                  Single login with register number or any email for Students, Officers, and Admins.
                 </p>
               </div>
 
@@ -449,13 +449,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        College Email
+                        Email Address (Personal or Official)
                       </label>
                       <input
                         type="email"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
-                        placeholder="official college email"
+                        placeholder="e.g. personal @gmail.com or college email"
                         className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"
                         required
                       />

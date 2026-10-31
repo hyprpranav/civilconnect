@@ -19,6 +19,7 @@ import {
 
 interface AppSidebarProps {
   currentUser: UserAccount;
+  userProfileImage?: string;
   activeTab: string;
   onSelectTab: (tab: string) => void;
   onLogout: () => void;
@@ -33,6 +34,7 @@ interface AppSidebarProps {
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({
   currentUser,
+  userProfileImage,
   activeTab,
   onSelectTab,
   onLogout,
@@ -359,13 +361,25 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       {/* User Footer Card */}
       <div className="p-3 border-t border-slate-100 bg-slate-50/50 space-y-2.5">
         <div className="flex items-center gap-3 px-2 py-1.5">
-          <div className="w-10 h-10 rounded-full bg-blue-100 border-2 border-blue-300 text-blue-900 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden shadow-xs">
-            {currentUser.avatarUrl ? (
-              <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
-            ) : (
-              currentUser.name ? currentUser.name.charAt(0) : 'U'
-            )}
-          </div>
+          {(() => {
+            const effectiveAvatar = 
+              userProfileImage || 
+              currentUser.avatarUrl || 
+              (currentUser as any).profileImage || 
+              (currentUser.email.includes('92762bec066') || currentUser.email.includes('hyprpranav') || currentUser.name.toLowerCase().includes('harish pranav') 
+                ? '/harish_pranav_profile.jpg' 
+                : undefined);
+
+            return (
+              <div className="w-10 h-10 rounded-full bg-blue-100 border-2 border-blue-300 text-blue-900 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden shadow-xs">
+                {effectiveAvatar ? (
+                  <img src={effectiveAvatar} alt={currentUser.name} className="w-full h-full object-cover" />
+                ) : (
+                  currentUser.name ? currentUser.name.charAt(0) : 'U'
+                )}
+              </div>
+            );
+          })()}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-slate-900 truncate">
               {currentUser.name}

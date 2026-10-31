@@ -245,7 +245,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const activeStudentsCount = students.filter(s => !s.isArchived).length;
   const completedCount = students.filter(s => s.profileCompletionPercentage === 100).length;
   const pendingCount = students.filter(s => s.profileCompletionPercentage < 100).length;
-  const pendingRequestsCount = requests.filter(r => r.status === 'Pending').length;
+  const pendingRequestsCount = requests.filter(r => r.status === 'Pending').length + pendingAccountRequests.length;
 
   // Selection handlers
   const toggleSelectAllPage = () => {
@@ -563,7 +563,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <div className="min-w-0">
             <p className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">{pendingRequestsCount}</p>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Requests</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Pending Requests</p>
           </div>
         </div>
 

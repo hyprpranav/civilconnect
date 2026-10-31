@@ -29,6 +29,7 @@ export const App: React.FC = () => {
   const [integrationModalOpen, setIntegrationModalOpen] = useState(false);
   const [supportTicketModalOpen, setSupportTicketModalOpen] = useState(false);
   const [openTicketsCount, setOpenTicketsCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,24 +40,33 @@ export const App: React.FC = () => {
   const loadAppInitialState = async () => {
     setIsLoading(true);
     try {
-      const [allStudents, allAnnouncements, allTickets] = await Promise.all([
+      const [allStudents, allAnnouncements, allTickets, allPendingAccs, allOfficerReqs] = await Promise.all([
         storageService.getStudents(),
         storageService.getAnnouncements(),
-        storageService.getSupportTickets()
+        storageService.getSupportTickets(),
+        storageService.getPendingAccountRequests(),
+        storageService.getRequests()
       ]);
       setStudents(allStudents);
       setAnnouncements(allAnnouncements);
       setOpenTicketsCount(allTickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length);
+      setPendingRequestsCount(
+        allPendingAccs.filter(r => r.status === 'pending').length +
+        allOfficerReqs.filter(r => r.status === 'Pending').length
+      );
 
       const activeSession = authService.getCurrentUser();
       if (activeSession) {
-        setCurrentUser(activeSession);
         if (activeSession.role === 'STUDENT') {
           const profile = await storageService.getStudentById(activeSession.normalizedRegisterNumber);
           setCurrentStudent(profile);
           if (profile?.profileImage) {
             activeSession.avatarUrl = profile.profileImage;
+          } else if (activeSession.email.includes('92762bec066') || activeSession.name.toLowerCase().includes('harish pranav')) {
+            activeSession.avatarUrl = '/harish_pranav_profile.jpg';
           }
+        } else if (!activeSession.avatarUrl && (activeSession.email.includes('hyprpranav') || activeSession.name.toLowerCase().includes('harish pranav'))) {
+          activeSession.avatarUrl = '/harish_pranav_profile.jpg';
         }
         setCurrentUser(activeSession);
         setCurrentView('dashboard');
@@ -71,18 +81,27 @@ export const App: React.FC = () => {
   };
 
   const refreshData = async () => {
-    const [allStudents, allAnnouncements, allTickets] = await Promise.all([
+    const [allStudents, allAnnouncements, allTickets, allPendingAccs, allOfficerReqs] = await Promise.all([
       storageService.getStudents(),
       storageService.getAnnouncements(),
-      storageService.getSupportTickets()
+      storageService.getSupportTickets(),
+      storageService.getPendingAccountRequests(),
+      storageService.getRequests()
     ]);
     setStudents(allStudents);
     setAnnouncements(allAnnouncements);
     setOpenTicketsCount(allTickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length);
+    setPendingRequestsCount(
+      allPendingAccs.filter(r => r.status === 'pending').length +
+      allOfficerReqs.filter(r => r.status === 'Pending').length
+    );
 
     if (currentUser && currentUser.role === 'STUDENT') {
       const profile = await storageService.getStudentById(currentUser.normalizedRegisterNumber);
       setCurrentStudent(profile);
+      if (profile?.profileImage) {
+        setCurrentUser(prev => prev ? { ...prev, avatarUrl: profile.profileImage } : null);
+      }
     }
   };
 
@@ -92,13 +111,21 @@ export const App: React.FC = () => {
   };
 
   const handleLoginSuccess = async (user: UserAccount, requirePasswordChange: boolean) => {
-    setCurrentUser(user);
     if (user.role === 'STUDENT') {
       const profile = await storageService.getStudentById(user.normalizedRegisterNumber);
       setCurrentStudent(profile);
+      if (profile?.profileImage) {
+        user.avatarUrl = profile.profileImage;
+      } else if (user.email.includes('92762bec066') || user.name.toLowerCase().includes('harish pranav')) {
+        user.avatarUrl = '/harish_pranav_profile.jpg';
+      }
+    } else if (!user.avatarUrl && (user.email.includes('hyprpranav') || user.name.toLowerCase().includes('harish pranav'))) {
+      user.avatarUrl = '/harish_pranav_profile.jpg';
     }
+    setCurrentUser(user);
     setSidebarTab('dashboard');
     setCurrentView('dashboard');
+    refreshData();
 
     if (requirePasswordChange) {
       setIsMandatoryPasswordChange(true);
@@ -157,80 +184,90 @@ export const App: React.FC = () => {
         />
       )}
 
-      {currentView === 'dashboard' && currentUser && (
-        <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50">
-          {/* Left Navigation Sidebar (Desktop rail + Mobile off-canvas drawer) */}
-          <AppSidebar
-            currentUser={currentUser}
-            activeTab={sidebarTab}
-            onSelectTab={tab => {
-              setSidebarTab(tab);
-              setIsMobileNavOpen(false);
-            }}
-            onLogout={handleLogout}
-            onOpenIntegrationGuide={() => setIntegrationModalOpen(true)}
-            onOpenChangePassword={() => {
-              setIsMandatoryPasswordChange(false);
-              setPasswordModalOpen(true);
-            }}
-            onOpenSupportTicket={() => setSupportTicketModalOpen(true)}
-            openTicketsCount={openTicketsCount}
-            isMobileOpen={isMobileNavOpen}
-            onCloseMobile={() => setIsMobileNavOpen(false)}
-          />
+      {currentView === 'dashboard' && currentUser && (() => {
+        const effectiveAvatar = 
+          currentStudent?.profileImage || 
+          currentUser.avatarUrl || 
+          ((currentUser.email.includes('92762bec066') || currentUser.email.includes('hyprpranav') || currentUser.name.toLowerCase().includes('harish pranav')) 
+            ? '/harish_pranav_profile.jpg' 
+            : undefined);
 
-          {/* Right Main Content Column */}
-          <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-            {/* Sticky Mobile Top Header Bar (< lg) */}
-            <header className="lg:hidden shrink-0 bg-white border-b border-slate-200 px-3.5 py-2.5 flex items-center justify-between z-20 shadow-2xs">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <button
-                  type="button"
-                  onClick={() => setIsMobileNavOpen(true)}
-                  className="relative p-2 -ml-1 text-slate-700 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                  aria-label="Open Navigation Menu"
-                >
-                  <Menu className="w-5 h-5" />
-                  {openTicketsCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-white ring-1 ring-amber-400" />
-                  )}
-                </button>
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-xs font-bold text-slate-900 block leading-tight truncate">CIVIL CONNECT</span>
-                    <span className="text-[10px] font-semibold text-blue-600 block leading-none truncate">
-                      {getTabTitle(sidebarTab)}
-                    </span>
+        return (
+          <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50">
+            {/* Left Navigation Sidebar (Desktop rail + Mobile off-canvas drawer) */}
+            <AppSidebar
+              currentUser={currentUser}
+              userProfileImage={effectiveAvatar}
+              activeTab={sidebarTab}
+              onSelectTab={tab => {
+                setSidebarTab(tab);
+                setIsMobileNavOpen(false);
+              }}
+              onLogout={handleLogout}
+              onOpenIntegrationGuide={() => setIntegrationModalOpen(true)}
+              onOpenChangePassword={() => {
+                setIsMandatoryPasswordChange(false);
+                setPasswordModalOpen(true);
+              }}
+              onOpenSupportTicket={() => setSupportTicketModalOpen(true)}
+              pendingRequestsCount={pendingRequestsCount}
+              openTicketsCount={openTicketsCount}
+              isMobileOpen={isMobileNavOpen}
+              onCloseMobile={() => setIsMobileNavOpen(false)}
+            />
+
+            {/* Right Main Content Column */}
+            <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+              {/* Sticky Mobile Top Header Bar (< lg) */}
+              <header className="lg:hidden shrink-0 bg-white border-b border-slate-200 px-3.5 py-2.5 flex items-center justify-between z-20 shadow-2xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileNavOpen(true)}
+                    className="relative p-2 -ml-1 text-slate-700 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                    aria-label="Open Navigation Menu"
+                  >
+                    <Menu className="w-5 h-5" />
+                    {openTicketsCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-white ring-1 ring-amber-400" />
+                    )}
+                  </button>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-slate-900 block leading-tight truncate">CIVIL CONNECT</span>
+                      <span className="text-[10px] font-semibold text-blue-600 block leading-none truncate">
+                        {getTabTitle(sidebarTab)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsMobileNavOpen(true)}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 transition-colors cursor-pointer"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                  <span>{currentUser.role === 'SUPER_ADMIN' ? 'Master' : currentUser.role === 'ADMIN' ? 'Admin' : currentUser.role === 'OFFICER' ? 'Faculty' : 'Student'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsMobileNavOpen(true)}
-                  className="w-8 h-8 rounded-full bg-blue-100 text-blue-900 font-bold text-xs flex items-center justify-center overflow-hidden border border-blue-200 shadow-2xs"
-                  aria-label="User profile"
-                >
-                  {currentUser.avatarUrl ? (
-                    <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
-                  ) : (
-                    currentUser.name ? currentUser.name.charAt(0) : 'U'
-                  )}
-                </button>
-              </div>
-            </header>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileNavOpen(true)}
+                    className="flex items-center gap-1 px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 transition-colors cursor-pointer"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span>{currentUser.role === 'SUPER_ADMIN' ? 'Master' : currentUser.role === 'ADMIN' ? 'Admin' : currentUser.role === 'OFFICER' ? 'Faculty' : 'Student'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileNavOpen(true)}
+                    className="w-8 h-8 rounded-full bg-blue-100 text-blue-900 font-bold text-xs flex items-center justify-center overflow-hidden border border-blue-200 shadow-2xs"
+                    aria-label="User profile"
+                  >
+                    {effectiveAvatar ? (
+                      <img src={effectiveAvatar} alt={currentUser.name} className="w-full h-full object-cover" />
+                    ) : (
+                      currentUser.name ? currentUser.name.charAt(0) : 'U'
+                    )}
+                  </button>
+                </div>
+              </header>
 
             {/* Scrollable Main View Area */}
             <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8">
@@ -277,7 +314,8 @@ export const App: React.FC = () => {
             </main>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Password Change Modal */}
       {currentUser && (

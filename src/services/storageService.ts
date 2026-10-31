@@ -99,6 +99,21 @@ class StorageService {
           localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
         }
       }
+      
+      // Ensure Harish Pranav default profile photo is populated
+      if (Array.isArray(students)) {
+        let changed = false;
+        students.forEach(s => {
+          if ((s.email.toLowerCase().includes('92762bec066') || s.name.toLowerCase().includes('harish pranav')) && !s.profileImage) {
+            s.profileImage = '/harish_pranav_profile.jpg';
+            changed = true;
+          }
+        });
+        if (changed) {
+          localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+        }
+      }
+
       if (includeArchived) return students;
       return students.filter(s => !s.isArchived);
     } catch {
@@ -497,8 +512,20 @@ class StorageService {
   public async getStaffAccounts(): Promise<UserAccount[]> {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.STAFF_ACCOUNTS);
-      if (!data) return INITIAL_STAFF_ACCOUNTS;
-      return JSON.parse(data);
+      let staff: UserAccount[] = data ? JSON.parse(data) : INITIAL_STAFF_ACCOUNTS;
+      if (Array.isArray(staff)) {
+        let changed = false;
+        staff.forEach(s => {
+          if ((s.email.toLowerCase().includes('hyprpranav') || s.name.toLowerCase().includes('harish pranav')) && !s.avatarUrl) {
+            s.avatarUrl = '/harish_pranav_profile.jpg';
+            changed = true;
+          }
+        });
+        if (changed) {
+          localStorage.setItem(STORAGE_KEYS.STAFF_ACCOUNTS, JSON.stringify(staff));
+        }
+      }
+      return staff;
     } catch {
       return INITIAL_STAFF_ACCOUNTS;
     }
@@ -705,34 +732,58 @@ class StorageService {
     }
 
     const req = requests[index];
-    const encoder = new TextEncoder();
-    const dataBuffer = encoder.encode(req.passwordPlainText || 'civil');
-    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const passHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const plainPass = req.passwordPlainText || 'civil';
 
-    const credsData = localStorage.getItem('civil_connect_passwords');
-    const creds = credsData ? JSON.parse(credsData) : {};
+    // Hash with standard system salt (matching authService)
+    const encoder = new TextEncoder();
+    const dataWithSalt = encoder.encode(plainPass + '_civil_connect_salt_2026');
+    const hashBufferWithSalt = await crypto.subtle.digest('SHA-256', dataWithSalt);
+    const passHash = Array.from(new Uint8Array(hashBufferWithSalt)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Legacy un-salted hash for backward compatibility
+    const dataRaw = encoder.encode(plainPass);
+    const hashBufferRaw = await crypto.subtle.digest('SHA-256', dataRaw);
+    const passHashRaw = Array.from(new Uint8Array(hashBufferRaw)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // 1. Save into main auth credentials store ('civil_connect_account_credentials')
+    const mainCredsData = localStorage.getItem('civil_connect_account_credentials');
+    const mainCreds = mainCredsData ? JSON.parse(mainCredsData) : {};
+    mainCreds[req.email.toLowerCase().trim()] = { identifier: req.email.toLowerCase().trim(), hash: passHash, isFirstLogin: false };
+    if (req.registerNumber) {
+      mainCreds[req.registerNumber.toLowerCase().trim()] = { identifier: req.registerNumber.toLowerCase().trim(), hash: passHash, isFirstLogin: false };
+    }
+    if (req.phone) {
+      mainCreds[req.phone.toLowerCase().trim()] = { identifier: req.phone.toLowerCase().trim(), hash: passHash, isFirstLogin: false };
+    }
+    localStorage.setItem('civil_connect_account_credentials', JSON.stringify(mainCreds));
+
+    // 2. Save into secondary legacy store ('civil_connect_passwords')
+    const legacyCredsData = localStorage.getItem('civil_connect_passwords');
+    const legacyCreds = legacyCredsData ? JSON.parse(legacyCredsData) : {};
+    legacyCreds[req.email.toLowerCase().trim()] = { identifier: req.email.toLowerCase().trim(), hash: passHash, isFirstLogin: false };
+    if (req.registerNumber) {
+      legacyCreds[req.registerNumber.toLowerCase().trim()] = { identifier: req.registerNumber.toLowerCase().trim(), hash: passHash, isFirstLogin: false };
+    }
+    localStorage.setItem('civil_connect_passwords', JSON.stringify(legacyCreds));
 
     if (req.role === 'OFFICER') {
       const newOfficer: UserAccount = {
         uid: `officer-${Date.now()}`,
         registerNumber: req.phone || `FAC-${Math.floor(1000 + Math.random() * 9000)}`,
-        normalizedRegisterNumber: (req.phone || `fac-${Math.floor(1000 + Math.random() * 9000)}`).toLowerCase(),
-        email: req.email,
-        normalizedEmail: req.email.toLowerCase(),
+        normalizedRegisterNumber: (req.phone || `fac-${Math.floor(1000 + Math.random() * 9000)}`).toLowerCase().trim(),
+        email: req.email.trim(),
+        normalizedEmail: req.email.toLowerCase().trim(),
         role: 'OFFICER',
         isFirstLogin: false,
         accountStatus: 'active',
         createdAt: new Date().toISOString(),
-        name: req.name,
+        name: req.name.trim(),
         department: req.department,
-        academicYear: '2nd Year'
+        academicYear: '2nd Year',
+        avatarUrl: undefined
       };
 
       await this.saveStaffAccount(newOfficer);
-      creds[req.email.toLowerCase()] = { identifier: req.email.toLowerCase(), hash: passHash, isFirstLogin: false };
-      localStorage.setItem('civil_connect_passwords', JSON.stringify(creds));
     } else {
       // Student
       const regClean = (req.registerNumber || `TEMP${Date.now()}`).trim();
@@ -740,10 +791,10 @@ class StorageService {
         id: regClean.toLowerCase(),
         registerNumber: regClean,
         normalizedRegisterNumber: regClean.toLowerCase(),
-        name: req.name,
-        email: req.email,
-        normalizedEmail: req.email.toLowerCase(),
-        phone: req.phone,
+        name: req.name.trim(),
+        email: req.email.trim(),
+        normalizedEmail: req.email.toLowerCase().trim(),
+        phone: req.phone.trim(),
         department: req.department,
         academicYear: req.academicYear || '1st Year',
         club: 'Civil Engineers Association (CEA)',
@@ -759,9 +810,6 @@ class StorageService {
       };
 
       await this.saveStudent(newStudent);
-      creds[regClean.toLowerCase()] = { identifier: regClean.toLowerCase(), hash: passHash, isFirstLogin: false };
-      creds[req.email.toLowerCase()] = { identifier: req.email.toLowerCase(), hash: passHash, isFirstLogin: false };
-      localStorage.setItem('civil_connect_passwords', JSON.stringify(creds));
     }
 
     req.status = 'approved';
