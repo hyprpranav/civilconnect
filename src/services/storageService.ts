@@ -44,7 +44,7 @@ const STORAGE_KEYS = {
   SUPPORT_TICKETS: 'civil_connect_support_tickets',
   ACCOUNT_REQUESTS: 'civil_connect_account_requests',
   TEAM_REQUESTS: 'civil_connect_team_requests',
-  INITIALIZED: 'civil_connect_initialized_clean_v5'
+  INITIALIZED: 'civil_connect_initialized_clean_v6'
 };
 
 // Firestore helper: strips all `undefined` values recursively to avoid FirebaseError
@@ -108,7 +108,7 @@ class StorageService {
         localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(INITIAL_AUDIT_LOGS));
         localStorage.setItem(STORAGE_KEYS.TEAMS, JSON.stringify([]));
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(DEFAULT_SYSTEM_SETTINGS));
-        localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'civil_connect_initialized_clean_v5');
+        localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'civil_connect_initialized_clean_v6');
       }
     } catch (e) {
       console.error('Storage initialization failed', e);

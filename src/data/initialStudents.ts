@@ -1812,11 +1812,93 @@ export const INITIAL_STUDENTS: StudentProfile[] = [
     "registrationStatus": "ACCEPTED",
     "confirmationId": "CONF-3D7515FA",
     "registrationDate": "12/10/2026, 20:45:53",
-    "profileCompletionPercentage": 0,
-    "profileStatus": "draft",
-    "shortBio": "",
+    "profileCompletionPercentage": 100,
+    "profileStatus": "verified",
+    "profileImage": "/harish_pranav_profile.jpg",
+    "shortBio": "Civil Engineering undergraduate documenting skills and team formation strengths.",
+    "skills": {
+      "strongestSkills": [
+        "Communication Skills",
+        "Leadership",
+        "Team Management",
+        "Problem Solving",
+        "Critical Thinking",
+        "Creativity and Innovation",
+        "Decision Making",
+        "Public Speaking",
+        "Adaptability"
+      ]
+    },
+    "interests": {
+      "activities": [
+        "Event Hosting and Coordination",
+        "Hackathon Participation",
+        "Event Committee Organization",
+        "Hackathon Organization",
+        "Project Development",
+        "Startup and Entrepreneurship",
+        "MSME / Government Scheme Applications",
+        "Club and Association Activities"
+      ],
+      "organizeCollegeEvents": true,
+      "participateExternalEvents": true,
+      "applyFundingOpportunities": true,
+      "representCollege": true,
+      "organizeTechnicalWorkshops": true
+    },
+    "teamStrengths": {
+      "roles": ["Team Leader", "Core Technical Engineer", "Research & Documentation Lead"],
+      "logisticsSkills": ["Event Logistics", "Team Coordination", "Documentation"]
+    },
+    "teamPreferences": {
+      "preferredRole": "Team Leader",
+      "preferredTechnicalDomain": "Smart Infrastructure & AI",
+      "projectMode": "Team",
+      "preferredTeamSize": "4-5 Members",
+      "previousProjectExperience": "Advanced",
+      "hackathonExperience": "Winner in State-Level Hackathons",
+      "previousEventParticipation": "Yes",
+      "availability": "High (10+ hrs/wk)",
+      "willingnessToTravel": true,
+      "preferredProjectCategories": ["AI & Smart Cities", "Full Stack Web"],
+      "workedInTeam": true,
+      "participatedInHackathon": true,
+      "developedTechnicalProject": true,
+      "hasProjectPortfolio": true,
+      "willingToLeadTeam": true,
+      "collaborateAcrossDepartments": true
+    },
+    "interviewEvaluation": {
+      "id": "eval-927624bec066",
+      "studentId": "927624bec066",
+      "studentRegNo": "927624BEC066",
+      "studentName": "Harish Pranav S",
+      "evaluatedByUid": "staff_pranav",
+      "evaluatedByName": "Pranav",
+      "evaluatorRole": "OFFICER",
+      "evaluatedAt": "2026-10-31T16:12:39.376Z",
+      "initialEvaluatedByName": "Harish Pranav S (Dev)",
+      "initialEvaluatedAt": "2026-10-31T15:49:01.281Z",
+      "lastUpdatedByName": "Pranav",
+      "lastUpdatedByRole": "OFFICER",
+      "lastUpdatedAt": "2026-10-31T16:12:39.376Z",
+      "totalMarks": 95,
+      "maxTotalMarks": 100,
+      "percentage": 95,
+      "grade": "O (Outstanding)",
+      "generalFeedback": "Exceptional communication, clear visionary leadership aptitude, and deep technical clarity.",
+      "isPublishedToStudent": true,
+      "criteria": [
+        { "id": "crit-1", "name": "Technical Knowledge & Civil Domain Competency", "category": "Technical", "maxMarks": 20, "awardedMarks": 19, "remarks": "Strong technical grounding" },
+        { "id": "crit-2", "name": "Communication & Articulation Skills", "category": "Communication", "maxMarks": 20, "awardedMarks": 20, "remarks": "Flawless articulation and presentation" },
+        { "id": "crit-3", "name": "Problem Solving & Critical Thinking", "category": "Analytical", "maxMarks": 15, "awardedMarks": 14, "remarks": "Quick analytical thinking" },
+        { "id": "crit-4", "name": "Project & Hackathon Portfolio Mastery", "category": "Portfolio", "maxMarks": 15, "awardedMarks": 14, "remarks": "Solid project history" },
+        { "id": "crit-5", "name": "Team Player & Leadership Aptitude", "category": "Leadership", "maxMarks": 15, "awardedMarks": 14, "remarks": "Proven leadership traits" },
+        { "id": "crit-6", "name": "Work Ethic, Cultural Fit & Integrity", "category": "Professionalism", "maxMarks": 15, "awardedMarks": 14, "remarks": "High dedication and commitment" }
+      ]
+    },
     "personalInterests": [],
-    "updatedAt": "2026-10-30T18:15:30.281Z",
+    "updatedAt": "2026-10-31T16:12:39.376Z",
     "createdAt": "2026-10-30T18:15:30.281Z"
   },
   {
