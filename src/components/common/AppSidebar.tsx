@@ -15,6 +15,7 @@ import {
   KeyRound,
   LifeBuoy,
   ShieldCheck,
+  Bell,
   X
 } from 'lucide-react';
 
@@ -306,15 +307,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           {isStudent && (
             <>
               <button
-                onClick={() => handleTabClick('profile')}
+                onClick={() => handleTabClick('dashboard')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'profile'
+                  activeTab === 'dashboard'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                <User className={`w-4 h-4 ${activeTab === 'profile' ? 'text-blue-600' : 'text-slate-400'}`} />
-                <span>My Profile</span>
+                <LayoutDashboard className={`w-4 h-4 ${activeTab === 'dashboard' ? 'text-blue-600' : 'text-slate-400'}`} />
+                <span>Dashboard</span>
               </button>
 
               <button
@@ -339,6 +340,30 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               >
                 <Layers className={`w-4 h-4 ${activeTab === 'teams' ? 'text-blue-600' : 'text-slate-400'}`} />
                 <span>Team & Cohort</span>
+              </button>
+
+              <button
+                onClick={() => handleTabClick('updates')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'updates'
+                    ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <Bell className={`w-4 h-4 ${activeTab === 'updates' ? 'text-blue-600' : 'text-slate-400'}`} />
+                <span>Announcements</span>
+              </button>
+
+              <button
+                onClick={() => handleTabClick('profile')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'profile'
+                    ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <User className={`w-4 h-4 ${activeTab === 'profile' ? 'text-blue-600' : 'text-slate-400'}`} />
+                <span>My Profile</span>
               </button>
             </>
           )}

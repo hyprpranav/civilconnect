@@ -17,7 +17,8 @@ import {
   Sparkles,
   Award,
   Globe,
-  UploadCloud
+  UploadCloud,
+  Trash2
 } from 'lucide-react';
 import { cloudinaryService } from '../../services/cloudinaryService';
 import { storageService } from '../../services/storageService';
@@ -68,6 +69,26 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
       }
     } catch (err: any) {
       setPhotoMessage(err.message || 'Upload error occurred.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setIsUploadingPhoto(true);
+    setPhotoMessage(null);
+    try {
+      const updated = await storageService.saveStudent({
+        ...student,
+        profileImage: undefined,
+        cloudinaryPublicId: undefined
+      });
+      storageService.removeUserAvatar(student.email);
+      storageService.removeUserAvatar(student.registerNumber);
+      onProfileUpdated(updated);
+      setPhotoMessage('Profile photo removed.');
+    } catch (err: any) {
+      setPhotoMessage('Failed to remove photo.');
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -125,17 +146,31 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
               )}
             </div>
 
-            <label className="absolute inset-0 bg-slate-900/50 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-              <Camera className="w-6 h-6 mb-1" />
-              <span className="text-[10px] font-bold">Change Photo</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoSelect}
-                className="hidden"
-                disabled={isUploadingPhoto}
-              />
-            </label>
+            <div className="absolute inset-0 bg-slate-900/60 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity gap-1 p-2">
+              <label className="flex flex-col items-center cursor-pointer text-white hover:text-teal-300">
+                <Camera className="w-5 h-5 mb-0.5" />
+                <span className="text-[10px] font-bold">Change Photo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                  disabled={isUploadingPhoto}
+                />
+              </label>
+              {student.profileImage && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  disabled={isUploadingPhoto}
+                  className="text-red-300 hover:text-red-100 text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer mt-0.5"
+                  title="Remove profile photo"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remove</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Student Meta Details */}
