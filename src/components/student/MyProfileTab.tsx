@@ -105,7 +105,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Profile Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 relative overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6 relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
           {/* Photograph with upload trigger */}
           <div className="relative group shrink-0">

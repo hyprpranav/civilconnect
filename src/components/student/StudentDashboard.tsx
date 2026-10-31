@@ -58,7 +58,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   return (
     <div className="space-y-6">
       {/* Student Welcome Header Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 relative overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6 relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
           {/* Identity Info */}
           <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">

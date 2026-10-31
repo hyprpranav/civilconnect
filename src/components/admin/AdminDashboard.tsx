@@ -533,59 +533,59 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
 
       {/* Top 5 Stat Cards (Screenshot 1) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {/* Card 1: Students */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <Users className="w-6 h-6" />
+        <div className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{students.length}</p>
-            <p className="text-xs text-slate-400 font-medium">Students</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">{students.length}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Students</p>
           </div>
         </div>
 
         {/* Card 2: Staff Members */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-6 h-6" />
+        <div className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{staffAccounts.length || 1}</p>
-            <p className="text-xs text-slate-400 font-medium">Staff Members</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">{staffAccounts.length || 1}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Staff Members</p>
           </div>
         </div>
 
         {/* Card 3: Pending Requests */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Clock className="w-6 h-6" />
+        <div className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{pendingRequestsCount}</p>
-            <p className="text-xs text-slate-400 font-medium">Pending Requests</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">{pendingRequestsCount}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Requests</p>
           </div>
         </div>
 
         {/* Card 4: Teams */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <Users className="w-6 h-6" />
+        <div className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{teams.length}</p>
-            <p className="text-xs text-slate-400 font-medium">Teams</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">{teams.length}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Teams</p>
           </div>
         </div>
 
         {/* Card 5: Events */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
-            <Calendar className="w-6 h-6" />
+        <div className="col-span-2 sm:col-span-1 bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
+            <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{announcements.length}</p>
-            <p className="text-xs text-slate-400 font-medium">Events</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">{announcements.length}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Events & Notices</p>
           </div>
         </div>
       </div>
@@ -598,45 +598,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Master Operations
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
               <button
                 onClick={() => handleTabChange('bulkImport')}
-                className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:border-purple-300 hover:shadow-sm text-center flex flex-col items-center justify-center gap-3 transition-all cursor-pointer"
+                className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:border-purple-300 hover:shadow-sm text-center flex flex-col items-center justify-center gap-2 sm:gap-3 transition-all cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                  <Upload className="w-5 h-5" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <span className="text-xs font-bold text-slate-900">Import Database</span>
+                <span className="text-[11px] sm:text-xs font-bold text-slate-900">Import Database</span>
               </button>
 
               <button
                 onClick={() => handleTabChange('settings')}
-                className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:border-purple-300 hover:shadow-sm text-center flex flex-col items-center justify-center gap-3 transition-all cursor-pointer"
+                className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:border-purple-300 hover:shadow-sm text-center flex flex-col items-center justify-center gap-2 sm:gap-3 transition-all cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                  <ShieldCheck className="w-5 h-5" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <span className="text-xs font-bold text-slate-900">Manage Staff & Roles</span>
+                <span className="text-[11px] sm:text-xs font-bold text-slate-900">Manage Roles</span>
               </button>
 
               <button
                 onClick={() => handleTabChange('export')}
-                className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:border-blue-300 hover:shadow-sm text-center flex flex-col items-center justify-center gap-3 transition-all cursor-pointer"
+                className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:border-blue-300 hover:shadow-sm text-center flex flex-col items-center justify-center gap-2 sm:gap-3 transition-all cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <Download className="w-5 h-5" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <span className="text-xs font-bold text-slate-900">Export Data</span>
+                <span className="text-[11px] sm:text-xs font-bold text-slate-900">Export Data</span>
               </button>
 
               <button
                 onClick={() => handleTabChange('settings')}
-                className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:border-slate-300 hover:shadow-sm text-center flex flex-col items-center justify-center gap-3 transition-all cursor-pointer"
+                className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:border-slate-300 hover:shadow-sm text-center flex flex-col items-center justify-center gap-2 sm:gap-3 transition-all cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
-                  <Settings className="w-5 h-5" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
+                  <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <span className="text-xs font-bold text-slate-900">System Settings</span>
+                <span className="text-[11px] sm:text-xs font-bold text-slate-900">System Settings</span>
               </button>
             </div>
           </div>
@@ -747,7 +747,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* TAB 2: STUDENT MANAGEMENT DATABASE */}
       {activeTab === 'students' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-6 shadow-xs space-y-4">
           {/* Action and Search Toolbar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="relative flex-1">
@@ -810,8 +810,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto border border-slate-200 rounded-xl -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
+            <table className="w-full text-left text-xs min-w-[760px]">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
                 <tr>
                   <th className="py-3 px-3 w-8">
@@ -1064,7 +1064,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {activeTab === 'requests' && (
         <div className="space-y-6">
           {/* SECTION A: PENDING ACCOUNT REQUESTS (OFFICERS & STUDENTS) */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-6 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 font-serif flex items-center gap-2">
@@ -1137,7 +1137,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           {/* SECTION B: FACULTY OFFICER ADMINISTRATIVE REQUESTS */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 font-serif">
@@ -1433,7 +1433,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* TAB 7: AUDIT LOGS */}
       {activeTab === 'audit' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <h3 className="text-sm font-bold text-slate-900 font-serif">
@@ -1445,8 +1445,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto -mx-3.5 px-3.5 sm:mx-0 sm:px-0 border border-slate-200 rounded-xl">
+            <table className="w-full text-left text-xs min-w-[700px]">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
                 <tr>
                   <th className="py-2.5 px-3">Timestamp</th>

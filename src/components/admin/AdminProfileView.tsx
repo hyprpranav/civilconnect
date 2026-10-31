@@ -63,11 +63,11 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
   return (
     <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-150">
       {/* Top Bar (Matching Screenshot 2) */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button
             onClick={onBackToDashboard}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back
           </button>
@@ -81,7 +81,7 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
           </div>
         </div>
 
-        <label className="cursor-pointer inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors">
+        <label className="cursor-pointer inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors self-stretch sm:self-auto justify-center">
           <Edit3 className="w-3.5 h-3.5" />
           <span>Edit Photo</span>
           <input
@@ -102,7 +102,7 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
       )}
 
       {/* Profile Card Hero (Matching Screenshot 2) */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-8 shadow-xs text-center space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-8 shadow-xs text-center space-y-4">
         <div className="relative inline-block mx-auto">
           <img
             src={profileImage}
@@ -134,7 +134,7 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
         <div className="pt-2">
           <button
             onClick={() => alert(`Official administrator account ID: ${user.uid}\nEmail: ${user.email}`)}
-            className="px-4 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors"
+            className="px-4 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors cursor-pointer"
           >
             View Public Profile
           </button>
@@ -142,7 +142,7 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
       </div>
 
       {/* Basic Information Card (Matching Screenshot 2) */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-6 shadow-xs space-y-4">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           BASIC INFORMATION
         </span>
@@ -191,7 +191,7 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
       </div>
 
       {/* Contact Details Card (Matching Screenshot 2) */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-6 shadow-xs space-y-4">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           CONTACT DETAILS
         </span>

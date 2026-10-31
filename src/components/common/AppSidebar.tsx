@@ -6,19 +6,15 @@ import {
   Layers, 
   BarChart3, 
   Download, 
-  Megaphone, 
-  UserCog, 
   UserCheck, 
   Cloud, 
   User, 
   FileText, 
   LogOut, 
-  AlertTriangle, 
   Building2,
-  Calendar,
-  Sparkles,
   KeyRound,
-  LifeBuoy
+  LifeBuoy,
+  X
 } from 'lucide-react';
 
 interface AppSidebarProps {
@@ -31,6 +27,8 @@ interface AppSidebarProps {
   onOpenSupportTicket?: () => void;
   pendingRequestsCount?: number;
   openTicketsCount?: number;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({
@@ -42,7 +40,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onOpenChangePassword,
   onOpenSupportTicket,
   pendingRequestsCount = 0,
-  openTicketsCount = 0
+  openTicketsCount = 0,
+  isMobileOpen = false,
+  onCloseMobile
 }) => {
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
   const isAdmin = currentUser.role === 'ADMIN' || isSuperAdmin;
@@ -51,23 +51,43 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
   const roleLabel = isSuperAdmin ? 'Master' : isAdmin ? 'Admin' : isOfficer ? 'Faculty' : 'Student';
 
-  return (
-    <aside className="w-64 bg-white border-r border-slate-200/90 flex flex-col shrink-0 h-screen sticky top-0 font-sans z-30 select-none shadow-xs">
+  const handleTabClick = (tab: string) => {
+    onSelectTab(tab);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
+  const renderSidebarContent = (isMobileView: boolean) => (
+    <div className="flex flex-col h-full bg-white select-none">
       {/* Brand Header */}
-      <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
-          <Building2 className="w-5 h-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <h1 className="text-sm font-bold tracking-tight text-slate-900 truncate">
-              CIVIL CONNECT
-            </h1>
+      <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
+            <Building2 className="w-5 h-5" />
           </div>
-          <span className="text-[11px] font-semibold text-blue-600 block truncate">
-            {roleLabel}
-          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm font-bold tracking-tight text-slate-900 truncate">
+                CIVIL CONNECT
+              </h1>
+            </div>
+            <span className="text-[11px] font-semibold text-blue-600 block truncate">
+              {roleLabel} Console
+            </span>
+          </div>
         </div>
+
+        {isMobileView && onCloseMobile && (
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Scrollable Body */}
@@ -77,8 +97,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           {isAdmin && (
             <>
               <button
-                onClick={() => onSelectTab('dashboard')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('dashboard')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'dashboard'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -89,8 +109,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('students')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('students')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'students'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -101,8 +121,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('teams')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('teams')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'teams' || activeTab === 'builder'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -113,8 +133,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('analytics')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('analytics')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'analytics'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -125,8 +145,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('export')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('export')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'export'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -137,8 +157,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('tickets')}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('tickets')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'tickets'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -156,8 +176,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('profile')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('profile')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'profile'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -172,8 +192,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           {isOfficer && (
             <>
               <button
-                onClick={() => onSelectTab('dashboard')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('dashboard')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'dashboard'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -184,8 +204,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('students')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('students')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'students' || activeTab === 'addStudent'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -196,8 +216,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('analytics')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('analytics')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'analytics'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -208,8 +228,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('requests')}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('requests')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'requests'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -225,14 +245,26 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   </span>
                 )}
               </button>
+
+              <button
+                onClick={() => handleTabClick('profile')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'profile'
+                    ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <User className={`w-4 h-4 ${activeTab === 'profile' ? 'text-blue-600' : 'text-slate-400'}`} />
+                <span>My Profile</span>
+              </button>
             </>
           )}
 
           {isStudent && (
             <>
               <button
-                onClick={() => onSelectTab('profile')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('profile')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'profile'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -243,8 +275,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('form')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('form')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'form'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -255,14 +287,14 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
 
               <button
-                onClick={() => onSelectTab('teams')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => handleTabClick('teams')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'teams'
                     ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                <Users className={`w-4 h-4 ${activeTab === 'teams' ? 'text-blue-600' : 'text-slate-400'}`} />
+                <Layers className={`w-4 h-4 ${activeTab === 'teams' ? 'text-blue-600' : 'text-slate-400'}`} />
                 <span>Team & Cohort</span>
               </button>
             </>
@@ -277,8 +309,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             </span>
 
             <button
-              onClick={() => onSelectTab('requests')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              onClick={() => handleTabClick('requests')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'requests'
                   ? 'bg-blue-50 text-blue-700 font-bold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -297,8 +329,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
             {onOpenIntegrationGuide && (
               <button
-                onClick={onOpenIntegrationGuide}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                onClick={() => {
+                  if (onCloseMobile) onCloseMobile();
+                  onOpenIntegrationGuide();
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer"
               >
                 <Cloud className="w-4 h-4 text-teal-600" />
                 <span>Cloud Backend</span>
@@ -307,8 +342,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
             {onOpenChangePassword && (
               <button
-                onClick={onOpenChangePassword}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                onClick={() => {
+                  if (onCloseMobile) onCloseMobile();
+                  onOpenChangePassword();
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer"
               >
                 <KeyRound className="w-4 h-4 text-slate-400" />
                 <span>Security PIN & Key</span>
@@ -339,17 +377,23 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </div>
 
         <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+          onClick={() => {
+            if (onCloseMobile) onCloseMobile();
+            onLogout();
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
         >
-          <LogOut className="w-3.5 h-3.5" />
+          <LogOut className="w-4 h-4" />
           <span>Sign Out</span>
         </button>
 
         {!isAdmin && (
           <button
             type="button"
-            onClick={onOpenSupportTicket}
+            onClick={() => {
+              if (onCloseMobile) onCloseMobile();
+              onOpenSupportTicket?.();
+            }}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100/90 border border-amber-200 transition-colors cursor-pointer"
           >
             <LifeBuoy className="w-3.5 h-3.5 text-amber-600" />
@@ -366,6 +410,36 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           </span>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar: Permanent left rail on large screens (>= lg / 1024px) */}
+      <aside className="hidden lg:flex w-64 bg-white border-r border-slate-200/90 flex-col shrink-0 h-screen sticky top-0 font-sans z-30 select-none shadow-xs">
+        {renderSidebarContent(false)}
+      </aside>
+
+      {/* Mobile Drawer: Slide-out panel for phone and tablet screens (< lg) */}
+      <div 
+        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${
+          isMobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Dark Backdrop with blur */}
+        <div 
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-300"
+          onClick={onCloseMobile}
+        />
+        {/* Sliding Panel */}
+        <aside 
+          className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col h-full transform transition-transform duration-300 ease-in-out ${
+            isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          {renderSidebarContent(true)}
+        </aside>
+      </div>
+    </>
   );
 };

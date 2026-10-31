@@ -14,7 +14,8 @@ import {
   Trash2, 
   User, 
   RefreshCw,
-  Sparkles
+  Sparkles,
+  ArrowLeft
 } from 'lucide-react';
 
 interface AdminFeedbackViewProps {
@@ -140,36 +141,36 @@ export const AdminFeedbackView: React.FC<AdminFeedbackViewProps> = ({
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Reported</span>
-          <p className="text-2xl font-extrabold text-slate-900">{tickets.length}</p>
-          <p className="text-[11px] text-slate-500">All student & officer tickets</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Total Reported</span>
+          <p className="text-xl sm:text-2xl font-extrabold text-slate-900">{tickets.length}</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">All tickets</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-amber-700">Open Tickets</span>
-          <p className="text-2xl font-extrabold text-amber-900">{openTicketsCount}</p>
-          <p className="text-[11px] text-slate-500">Awaiting admin review</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-amber-700">Open Tickets</span>
+          <p className="text-xl sm:text-2xl font-extrabold text-amber-900">{openTicketsCount}</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">Awaiting review</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-700">In Progress</span>
-          <p className="text-2xl font-extrabold text-blue-900">{inProgressCount}</p>
-          <p className="text-[11px] text-slate-500">Being addressed</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-blue-700">In Progress</span>
+          <p className="text-xl sm:text-2xl font-extrabold text-blue-900">{inProgressCount}</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">Being addressed</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Resolved</span>
-          <p className="text-2xl font-extrabold text-emerald-900">{resolvedCount}</p>
-          <p className="text-[11px] text-slate-500">Rectified & replied</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-emerald-700">Resolved</span>
+          <p className="text-xl sm:text-2xl font-extrabold text-emerald-900">{resolvedCount}</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">Rectified & replied</p>
         </div>
       </div>
 
-      {/* Main Ticket Interface (Split Column) */}
+      {/* Main Ticket Interface (Split Column with mobile toggle) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Tickets List */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+        <div className={`lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-5 shadow-xs space-y-4 ${selectedTicket ? 'hidden lg:block' : 'block'}`}>
           <div className="space-y-3">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -272,9 +273,16 @@ export const AdminFeedbackView: React.FC<AdminFeedbackViewProps> = ({
         </div>
 
         {/* Right Column: Ticket Detail & Reply Panel */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+        <div className={`lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs space-y-4 ${!selectedTicket ? 'hidden lg:block' : 'block'}`}>
           {selectedTicket ? (
             <div className="space-y-4">
+              <button
+                onClick={() => setSelectedTicket(null)}
+                className="lg:hidden inline-flex items-center gap-1.5 text-xs text-blue-700 font-bold mb-2 hover:underline cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Back to ticket list
+              </button>
+
               <div className="flex items-start justify-between pb-3 border-b border-slate-100 gap-2">
                 <div>
                   <div className="flex items-center gap-2">

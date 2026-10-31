@@ -372,57 +372,57 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
       </div>
 
       {/* Large Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1.5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1 sm:space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Enrolled Cohort</span>
-            <Users className="w-5 h-5 text-blue-700" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Total Enrolled</span>
+            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700" />
           </div>
-          <p className="text-3xl font-extrabold text-slate-900">{totalAssigned}</p>
-          <p className="text-xs text-slate-500 font-medium">All active student records in database</p>
+          <p className="text-xl sm:text-3xl font-extrabold text-slate-900">{totalAssigned}</p>
+          <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">All active student records</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1.5">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1 sm:space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Pending Review</span>
-            <Clock className="w-5 h-5 text-amber-600" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Pending Review</span>
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
           </div>
-          <p className="text-3xl font-extrabold text-amber-900">{pendingReviewCount}</p>
-          <p className="text-xs text-slate-500 font-medium">Profiles requiring faculty verification</p>
+          <p className="text-xl sm:text-3xl font-extrabold text-amber-900">{pendingReviewCount}</p>
+          <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Requires faculty verification</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1.5">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1 sm:space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Verified Profiles</span>
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Verified Profiles</span>
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
           </div>
-          <p className="text-3xl font-extrabold text-emerald-900">{verifiedCount}</p>
-          <p className="text-xs text-slate-500 font-medium">Form completed & confirmed</p>
+          <p className="text-xl sm:text-3xl font-extrabold text-emerald-900">{verifiedCount}</p>
+          <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Confirmed & verified</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1.5">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1 sm:space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Average Completion</span>
-            <TrendingUp className="w-5 h-5 text-teal-600" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Avg Completion</span>
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
           </div>
-          <p className="text-3xl font-extrabold text-teal-900">{avgCompletion}%</p>
-          <p className="text-xs text-slate-500 font-medium">Across all competencies & skills</p>
+          <p className="text-xl sm:text-3xl font-extrabold text-teal-900">{avgCompletion}%</p>
+          <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Across all competencies</p>
         </div>
       </div>
 
       {/* TAB 1: STUDENT DIRECTORY (Enhanced, highly readable UI!) */}
       {activeTab === 'students' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-5 p-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4 sm:space-y-5 p-3.5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 font-serif">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 font-serif">
                 Registered Student Database ({filteredStudents.length})
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500">
                 Filter by any of the 12 engineering departments or search directly.
               </p>
             </div>
-            <span className="text-xs font-bold text-blue-900 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+            <span className="self-start sm:self-auto text-xs font-bold text-blue-900 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
               {filteredStudents.length} Students
             </span>
           </div>
@@ -446,7 +446,7 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
               <select
                 value={deptFilter}
                 onChange={e => setDeptFilter(e.target.value)}
-                className="px-3 py-2 text-xs sm:text-sm font-semibold border border-slate-300 rounded-xl bg-white shadow-2xs max-w-[280px]"
+                className="px-3 py-2 text-xs sm:text-sm font-semibold border border-slate-300 rounded-xl bg-white shadow-2xs max-w-full sm:max-w-[280px]"
               >
                 <option value="All">All Departments ({students.length})</option>
                 {ALL_DEPARTMENTS.map(dept => (
@@ -469,8 +469,8 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
           </div>
 
           {/* Large, High-Contrast Student Table */}
-          <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-2xs">
-            <table className="w-full text-left text-xs sm:text-sm border-collapse">
+          <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-2xs -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[760px]">
               <thead className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[11px] tracking-wider">
                 <tr>
                   <th className="py-3.5 px-4">Student Profile</th>

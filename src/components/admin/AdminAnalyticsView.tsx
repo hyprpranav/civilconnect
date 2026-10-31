@@ -405,15 +405,15 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
   return (
     <div className="space-y-6 font-sans">
       {/* Top Banner & Filter Controls */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-900 border border-blue-200">
               {titlePrefix} Analytics
             </span>
-            <span className="text-xs text-slate-400 font-mono">Real-Time Cohort Intelligence</span>
+            <span className="text-[10px] sm:text-xs text-slate-400 font-mono">Real-Time Cohort Intelligence</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-950 font-serif mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-950 font-serif mt-1">
             Talent & Academic Distribution Dashboard
           </h1>
           <p className="text-xs text-slate-500">
@@ -422,7 +422,7 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
         </div>
 
         {/* Year Filter Switcher */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start md:self-auto">
           <Calendar className="w-4 h-4 text-slate-400" />
           <span className="text-xs font-bold text-slate-700">Filter Year:</span>
           <select
@@ -445,8 +445,8 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
       {/* SECTION 1: PIE CHARTS & YEAR BARS (The new requested visualizations) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* PIE CHART 1: DEPARTMENT BREAKDOWN (User requested: "some pie chart and describe the percentage how many percentage from which department") */}
-        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+        {/* PIE CHART 1: DEPARTMENT BREAKDOWN */}
+        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 className="text-sm font-bold text-slate-900 font-serif flex items-center gap-2">
@@ -717,7 +717,7 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
       </div>
 
       {/* SECTION 3: INTERACTIVE STUDENT DRILLDOWN LIST (The requested touch-to-view student list) */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-2">
@@ -769,8 +769,8 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
         )}
 
         {/* Drilldown Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
+          <table className="w-full text-left text-xs min-w-[700px]">
             <thead>
               <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                 <th className="py-2.5 px-3">Student Name</th>
