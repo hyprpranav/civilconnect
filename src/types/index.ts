@@ -51,6 +51,7 @@ export interface UserAccount {
   academicYear: AcademicYear;
   avatarUrl?: string;
   phone?: string;
+  dob?: string;
 }
 
 export interface StudentCSVRecord {
@@ -58,6 +59,7 @@ export interface StudentCSVRecord {
   registerNumber: string;
   email: string;
   phone: string;
+  dob?: string;
   department: Department;
   academicYear: AcademicYear;
   japaneseStudent: 'Yes' | 'No';
@@ -120,6 +122,7 @@ export interface StudentProfile {
   email: string;
   normalizedEmail: string;
   phone: string;
+  dob?: string;
   department: Department;
   academicYear: AcademicYear;
   club: string;

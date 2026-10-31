@@ -53,8 +53,8 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [editForm, setEditForm] = useState({
     name: user.name || 'Harish Pranav S (Dev)',
-    email: user.email || 'hyprpranav@gmail.com',
     phone: user.phone || '+91 7845693765',
+    dob: user.dob || '2004-10-15',
     department: (user.department || 'Civil Engineering') as Department,
     academicYear: user.academicYear || 'IV Year',
     section: 'A'
@@ -137,9 +137,8 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
       const updatedUser: UserAccount = {
         ...user,
         name: editForm.name.trim(),
-        email: editForm.email.trim(),
-        normalizedEmail: editForm.email.toLowerCase().trim(),
         phone: editForm.phone.trim(),
+        dob: editForm.dob,
         department: editForm.department,
         academicYear: editForm.academicYear as any
       };
@@ -329,6 +328,13 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
           </div>
 
           <div className="py-2.5 flex justify-between">
+            <span className="text-slate-500">Date of Birth (DOB)</span>
+            <span className="font-semibold text-slate-900 font-mono">
+              {user.dob ? new Date(user.dob).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'October 15, 2004'}
+            </span>
+          </div>
+
+          <div className="py-2.5 flex justify-between">
             <span className="text-slate-500">Gender</span>
             <span className="font-semibold text-slate-900">Male</span>
           </div>
@@ -415,36 +421,67 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Email Address</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-bold text-slate-700">Email Address (Fixed)</label>
+                  <span className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
+                    <ShieldCheck className="w-3 h-3 text-slate-400" /> Cannot be changed
+                  </span>
+                </div>
                 <input
                   type="email"
-                  required
-                  value={editForm.email}
-                  onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+                  disabled
+                  readOnly
+                  value={user.email}
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-500 cursor-not-allowed"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-bold text-slate-700">Register Number (Fixed)</label>
+                  <span className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
+                    <ShieldCheck className="w-3 h-3 text-slate-400" /> Fixed ID
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  disabled
+                  readOnly
+                  value={user.registerNumber || 'hyprpranav'}
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-500 cursor-not-allowed"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Phone Number</label>
                   <input
                     type="text"
                     value={editForm.phone}
                     onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Academic Year</label>
+                  <label className="block font-bold text-slate-700 mb-1">Date of Birth (DOB)</label>
                   <input
-                    type="text"
-                    value={editForm.academicYear}
-                    onChange={e => setEditForm({ ...editForm, academicYear: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+                    type="date"
+                    value={editForm.dob}
+                    onChange={e => setEditForm({ ...editForm, dob: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 font-mono"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Academic Year</label>
+                <input
+                  type="text"
+                  value={editForm.academicYear}
+                  onChange={e => setEditForm({ ...editForm, academicYear: e.target.value as any })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+                />
               </div>
 
               <div>

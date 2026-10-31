@@ -32,6 +32,8 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
   onProfileUpdated
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(student.name || '');
+  const [dob, setDob] = useState(student.dob || '');
   const [phone, setPhone] = useState(student.phone || '');
   const [shortBio, setShortBio] = useState(student.shortBio || '');
   const [preferredContact, setPreferredContact] = useState(student.preferredContact || 'Email');
@@ -88,7 +90,9 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
     try {
       const updated = await storageService.saveStudent({
         ...student,
-        phone,
+        name: name.trim() || student.name,
+        dob: dob,
+        phone: phone.trim(),
         shortBio,
         preferredContact,
         personalInterests
@@ -269,6 +273,22 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
 
               <div className="bg-slate-50/90 hover:bg-white p-4 rounded-xl border border-slate-200 shadow-2xs hover:border-blue-300 transition-all">
                 <span className="text-xs uppercase font-extrabold text-blue-950 tracking-wider block mb-1">
+                  Date of Birth (DOB)
+                </span>
+                <p className="font-mono text-sm font-bold text-slate-800">
+                  {student.dob ? new Date(student.dob).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not specified (click Edit)'}
+                </p>
+              </div>
+
+              <div className="bg-slate-50/90 hover:bg-white p-4 rounded-xl border border-slate-200 shadow-2xs hover:border-blue-300 transition-all">
+                <span className="text-xs uppercase font-extrabold text-blue-950 tracking-wider block mb-1">
+                  Contact Phone Number
+                </span>
+                <p className="font-mono text-sm font-bold text-slate-800">{student.phone || 'Not provided'}</p>
+              </div>
+
+              <div className="bg-slate-50/90 hover:bg-white p-4 rounded-xl border border-slate-200 shadow-2xs hover:border-blue-300 transition-all">
+                <span className="text-xs uppercase font-extrabold text-blue-950 tracking-wider block mb-1">
                   Confirmation Identifier
                 </span>
                 <p className="font-mono text-sm font-bold text-slate-800">{student.confirmationId}</p>
@@ -286,21 +306,97 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
           {/* Permitted Editable Contact & Bio */}
           {isEditing && (
             <div className="bg-blue-50/70 border-2 border-blue-200 rounded-2xl p-6 space-y-4">
-              <h3 className="text-base font-extrabold text-blue-950 font-serif">
-                Edit Permitted Information
-              </h3>
+              <div className="flex items-center justify-between border-b border-blue-200/80 pb-2">
+                <h3 className="text-base font-extrabold text-blue-950 font-serif">
+                  Edit Student Profile Details
+                </h3>
+                <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-slate-400" /> Email & Reg No are fixed
+                </span>
+              </div>
 
               <div className="space-y-4 text-xs">
+                {/* Full Name (Editable) */}
                 <div>
                   <label className="block text-xs uppercase font-extrabold text-blue-950 tracking-wider mb-1.5">
-                    Phone / Mobile Number:
+                    Student Full Name (Editable):
                   </label>
                   <input
-                    type="tel"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="Enter your full name"
                     className="w-full px-4 py-3 text-sm font-semibold border-2 border-slate-300 rounded-xl bg-white text-slate-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 shadow-2xs transition-all"
+                    required
                   />
+                </div>
+
+                {/* Fixed Reg No & Email */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs uppercase font-extrabold text-blue-950 tracking-wider">
+                        Register Number (Fixed):
+                      </label>
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1 font-bold">
+                        <Lock className="w-3 h-3" /> Fixed ID
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={student.registerNumber}
+                      disabled
+                      readOnly
+                      className="w-full px-4 py-3 text-sm font-mono font-bold border-2 border-slate-200 rounded-xl bg-slate-100 text-slate-500 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs uppercase font-extrabold text-blue-950 tracking-wider">
+                        College Email (Fixed):
+                      </label>
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1 font-bold">
+                        <Lock className="w-3 h-3" /> Fixed Email
+                      </span>
+                    </div>
+                    <input
+                      type="email"
+                      value={student.email}
+                      disabled
+                      readOnly
+                      className="w-full px-4 py-3 text-sm font-mono font-bold border-2 border-slate-200 rounded-xl bg-slate-100 text-slate-500 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Phone / Mobile */}
+                  <div>
+                    <label className="block text-xs uppercase font-extrabold text-blue-950 tracking-wider mb-1.5">
+                      Phone / Mobile Number:
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      placeholder="e.g. 9876543210"
+                      className="w-full px-4 py-3 text-sm font-semibold border-2 border-slate-300 rounded-xl bg-white text-slate-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 shadow-2xs transition-all font-mono"
+                    />
+                  </div>
+
+                  {/* Date of Birth (DOB) */}
+                  <div>
+                    <label className="block text-xs uppercase font-extrabold text-blue-950 tracking-wider mb-1.5">
+                      Date of Birth (DOB):
+                    </label>
+                    <input
+                      type="date"
+                      value={dob}
+                      onChange={e => setDob(e.target.value)}
+                      className="w-full px-4 py-3 text-sm font-semibold border-2 border-slate-300 rounded-xl bg-white text-slate-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 shadow-2xs transition-all font-mono cursor-pointer"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -323,7 +419,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
                   <select
                     value={preferredContact}
                     onChange={e => setPreferredContact(e.target.value)}
-                    className="w-full px-4 py-3 text-sm font-semibold border-2 border-slate-300 rounded-xl bg-white text-slate-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 shadow-2xs transition-all"
+                    className="w-full px-4 py-3 text-sm font-semibold border-2 border-slate-300 rounded-xl bg-white text-slate-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 shadow-2xs transition-all cursor-pointer"
                   >
                     <option value="College Email">Official College Email</option>
                     <option value="Phone/WhatsApp">Phone / WhatsApp</option>

@@ -551,28 +551,54 @@ class StorageService {
   public async getStaffAccounts(): Promise<UserAccount[]> {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.STAFF_ACCOUNTS);
-      let staff: UserAccount[] = data ? JSON.parse(data) : INITIAL_STAFF_ACCOUNTS;
-      if (Array.isArray(staff)) {
-        let changed = false;
-        staff.forEach(s => {
-          if (s.avatarUrl === '/harish_pranav_profile.jpg' || (s.avatarUrl && s.avatarUrl.includes('unsplash'))) {
-            s.avatarUrl = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber) || undefined;
+      let staff: UserAccount[] = data ? JSON.parse(data) : [...INITIAL_STAFF_ACCOUNTS];
+      if (!Array.isArray(staff)) {
+        staff = [...INITIAL_STAFF_ACCOUNTS];
+      }
+
+      let changed = false;
+
+      // Always guarantee default staff members (like Harish Pranav Dev & Pranav Officer) are present
+      INITIAL_STAFF_ACCOUNTS.forEach(initAcc => {
+        const normEmail = initAcc.normalizedEmail.toLowerCase().trim();
+        const existingIdx = staff.findIndex(
+          s => s.normalizedEmail === normEmail || s.email.toLowerCase().trim() === normEmail
+        );
+        if (existingIdx === -1) {
+          staff.push({ ...initAcc });
+          changed = true;
+        } else {
+          // Fill in missing phone, dob if not present
+          if (!staff[existingIdx].phone && initAcc.phone) {
+            staff[existingIdx].phone = initAcc.phone;
             changed = true;
-          } else if (!s.avatarUrl) {
-            const saved = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber);
-            if (saved) {
-              s.avatarUrl = saved;
-              changed = true;
-            }
           }
-        });
-        if (changed) {
-          localStorage.setItem(STORAGE_KEYS.STAFF_ACCOUNTS, JSON.stringify(staff));
+          if (!staff[existingIdx].dob && initAcc.dob) {
+            staff[existingIdx].dob = initAcc.dob;
+            changed = true;
+          }
         }
+      });
+
+      staff.forEach(s => {
+        if (s.avatarUrl === '/harish_pranav_profile.jpg' || (s.avatarUrl && s.avatarUrl.includes('unsplash'))) {
+          s.avatarUrl = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber) || undefined;
+          changed = true;
+        } else if (!s.avatarUrl) {
+          const saved = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber);
+          if (saved) {
+            s.avatarUrl = saved;
+            changed = true;
+          }
+        }
+      });
+
+      if (changed) {
+        localStorage.setItem(STORAGE_KEYS.STAFF_ACCOUNTS, JSON.stringify(staff));
       }
       return staff;
     } catch {
-      return INITIAL_STAFF_ACCOUNTS;
+      return [...INITIAL_STAFF_ACCOUNTS];
     }
   }
 

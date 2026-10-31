@@ -12,6 +12,7 @@ import {
 import { storageService } from '../../services/storageService';
 import { AdminAnalyticsView } from '../admin/AdminAnalyticsView';
 import { AdminStaffView } from '../admin/AdminStaffView';
+import { OfficerProfileView } from './OfficerProfileView';
 import { 
   Users, 
   Search, 
@@ -48,6 +49,7 @@ interface OfficerDashboardProps {
   onRefreshData: () => void;
   externalTab?: string;
   onTabChange?: (tab: string) => void;
+  onUserUpdated?: (updated: UserAccount) => void;
 }
 
 export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
@@ -55,21 +57,22 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   students,
   onRefreshData,
   externalTab,
-  onTabChange
+  onTabChange,
+  onUserUpdated
 }) => {
-  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile'>('students');
 
   React.useEffect(() => {
     if (externalTab) {
       if (externalTab === 'dashboard') {
         setActiveTab('students');
-      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff'].includes(externalTab)) {
+      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff', 'profile'].includes(externalTab)) {
         setActiveTab(externalTab as any);
       }
     }
   }, [externalTab]);
 
-  const handleTabChange = (tab: 'students' | 'analytics' | 'requests' | 'addStudent' | 'staff') => {
+  const handleTabChange = (tab: 'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile') => {
     setActiveTab(tab);
     onTabChange?.(tab);
   };
@@ -308,6 +311,18 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
         );
     }
   };
+
+  if (activeTab === 'profile') {
+    return (
+      <div className="space-y-6 font-sans">
+        <OfficerProfileView
+          user={user}
+          onBackToDashboard={() => handleTabChange('students')}
+          onUserUpdated={onUserUpdated}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 font-sans">

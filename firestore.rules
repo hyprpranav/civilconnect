@@ -62,6 +62,12 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
+    // Staff Accounts Collection (Directory of Faculty & Admins)
+    match /staff_accounts/{staffId} {
+      allow read: if isAuthenticated();
+      allow write: if isOfficer() || isAdmin();
+    }
+
     // Admin Collection
     match /admin/{adminId} {
       allow read: if isAdmin();

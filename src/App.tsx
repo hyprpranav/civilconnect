@@ -329,6 +329,10 @@ export const App: React.FC = () => {
                   externalTab={sidebarTab}
                   onTabChange={setSidebarTab}
                   onRefreshData={refreshData}
+                  onUserUpdated={updated => {
+                    setCurrentUser(updated);
+                    refreshData();
+                  }}
                 />
               )}
 
