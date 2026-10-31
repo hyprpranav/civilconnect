@@ -63,12 +63,17 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
   // Form Fields
   const [formTeamName, setFormTeamName] = useState('');
   const [formTeamNumber, setFormTeamNumber] = useState('');
-  const [formCodeNumber, setFormCodeNumber] = useState('927624'); // default 6-digit institutional code
+  const [formTeamCode, setFormTeamCode] = useState('TM-001'); // Auto-generated team code e.g. TM-001
   const [formTargetSize, setFormTargetSize] = useState<number>(5);
   const [formDomain, setFormDomain] = useState('');
   const [formTargetCompetition, setFormTargetCompetition] = useState('Smart India Hackathon / Technical Symposium');
   const [formNotes, setFormNotes] = useState('');
   const [formMembers, setFormMembers] = useState<TeamMember[]>([]);
+
+  // Deletion Security PIN state (927624)
+  const [teamToDelete, setTeamToDelete] = useState<TeamFormation | null>(null);
+  const [deletePinInput, setDeletePinInput] = useState('');
+  const [deletePinError, setDeletePinError] = useState<string | null>(null);
 
   // Member search inside modal
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
@@ -117,7 +122,7 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
         const q = searchQuery.toLowerCase().trim();
         const matchesName = t.teamName.toLowerCase().includes(q);
         const matchesNumber = (t.teamNumber || '').toLowerCase().includes(q);
-        const matchesCode = (t.codeNumber || '').includes(q);
+        const matchesCode = ((t.teamCode || '') + ' ' + (t.codeNumber || '')).toLowerCase().includes(q);
         const matchesDomain = (t.projectDomain || '').toLowerCase().includes(q);
         const matchesCreator = (t.createdBy || '').toLowerCase().includes(q);
         const matchesMember = t.members.some(m => 
@@ -149,9 +154,10 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
   const handleOpenCreateModal = () => {
     setEditingTeamId(null);
     const nextNum = teams.length + 1;
+    const nextFormatted = nextNum < 10 ? `00${nextNum}` : nextNum < 100 ? `0${nextNum}` : `${nextNum}`;
+    setFormTeamCode(`TM-${nextFormatted}`);
     setFormTeamName(`Squad ${nextNum < 10 ? '0' + nextNum : nextNum}`);
     setFormTeamNumber(`Team ${nextNum < 10 ? '0' + nextNum : nextNum}`);
-    setFormCodeNumber('927624'); // default 6-digit institutional code
     setFormTargetSize(5);
     setFormDomain('Civil Engineering & Smart Cities');
     setFormTargetCompetition('Smart India Hackathon / Technical Symposium');
@@ -165,9 +171,9 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
   // Open Edit Modal
   const handleOpenEditModal = (team: TeamFormation) => {
     setEditingTeamId(team.id);
+    setFormTeamCode(team.teamCode || team.teamNumber || 'TM-001');
     setFormTeamName(team.teamName);
     setFormTeamNumber(team.teamNumber || '');
-    setFormCodeNumber(team.codeNumber || '927624');
     setFormTargetSize(team.targetSize || 5);
     setFormDomain(team.projectDomain || '');
     setFormTargetCompetition(team.targetCompetition || '');
@@ -262,12 +268,14 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
     try {
       const now = new Date().toISOString();
       const existingTeam = editingTeamId ? teams.find(t => t.id === editingTeamId) : null;
+      const nextNum = teams.length + 1;
+      const nextFormatted = nextNum < 10 ? `00${nextNum}` : nextNum < 100 ? `0${nextNum}` : `${nextNum}`;
 
       const teamToSave: TeamFormation = {
         id: editingTeamId || `team_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        teamNumber: formTeamNumber.trim() || `Team ${teams.length + 1}`,
+        teamCode: formTeamCode.trim() || `TM-${nextFormatted}`,
+        teamNumber: formTeamNumber.trim() || `Team ${nextNum < 10 ? '0' + nextNum : nextNum}`,
         teamName: formTeamName.trim(),
-        codeNumber: formCodeNumber.trim() || '927624',
         targetSize: Number(formTargetSize) || 5,
         projectDomain: formDomain.trim() || 'General Engineering',
         members: formMembers,
@@ -318,17 +326,30 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
     }
   };
 
-  // Delete team
-  const handleDeleteTeam = async (team: TeamFormation) => {
-    const confirmMsg = `Are you sure you want to delete "${team.teamName}" (${team.teamNumber || 'No #'})? This action cannot be undone.`;
-    if (!window.confirm(confirmMsg)) return;
+  // Request Delete Team with 6-Digit PIN
+  const handleRequestDeleteTeam = (team: TeamFormation) => {
+    setTeamToDelete(team);
+    setDeletePinInput('');
+    setDeletePinError(null);
+  };
+
+  // Confirm delete with 6-Digit PIN (927624)
+  const handleConfirmDeleteWithPin = async () => {
+    if (!teamToDelete) return;
+
+    if (deletePinInput.trim() !== '927624') {
+      setDeletePinError('Invalid 6-digit security PIN. Only authorized personnel can delete squads.');
+      return;
+    }
 
     try {
-      await storageService.deleteTeam(team.id);
+      await storageService.deleteTeam(teamToDelete.id);
       await loadTeams();
       if (onTeamUpdated) onTeamUpdated();
+      setTeamToDelete(null);
     } catch (err) {
       console.error('Failed to delete team', err);
+      setDeletePinError('Failed to delete squad. Please try again.');
     }
   };
 
@@ -375,11 +396,12 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
       });
 
       const nextNum = teams.length + 1;
+      const nextFormatted = nextNum < 10 ? `00${nextNum}` : nextNum < 100 ? `0${nextNum}` : `${nextNum}`;
       const draft: TeamFormation = {
         id: `auto_${Date.now()}`,
+        teamCode: `TM-${nextFormatted}`,
         teamNumber: `Team ${nextNum < 10 ? '0' + nextNum : nextNum}`,
         teamName: `CIVIL Vanguard Squad ${nextNum}`,
-        codeNumber: '927624',
         targetSize: 5,
         projectDomain: autoDomain,
         members: generatedMembers,
@@ -401,9 +423,9 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
   const handleImportAutoDraft = () => {
     if (!autoDraft) return;
     setEditingTeamId(null);
+    setFormTeamCode(autoDraft.teamCode || 'TM-001');
     setFormTeamName(autoDraft.teamName);
     setFormTeamNumber(autoDraft.teamNumber || '');
-    setFormCodeNumber(autoDraft.codeNumber || '927624');
     setFormTargetSize(autoDraft.targetSize || 5);
     setFormDomain(autoDraft.projectDomain);
     setFormTargetCompetition(autoDraft.targetCompetition || '');
@@ -641,10 +663,10 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                           {team.teamNumber || 'Team --'}
                         </span>
 
-                        {/* 6-digit Code Number */}
-                        <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-300 flex items-center gap-1" title="6-Digit Institutional Code">
-                          <span>Code:</span>
-                          <strong className="text-blue-900">{team.codeNumber || '927624'}</strong>
+                        {/* Team Code Badge */}
+                        <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-teal-50 text-teal-900 border border-teal-300 flex items-center gap-1" title="Unique Team ID">
+                          <Hash className="w-3 h-3 text-teal-700" />
+                          <strong>{team.teamCode || team.teamNumber || 'TM-001'}</strong>
                         </span>
 
                         {/* Status Badge */}
@@ -760,7 +782,7 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                       type="button"
                       onClick={() => handleOpenEditModal(team)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition-colors cursor-pointer"
-                      title="Edit team details, number, 6-digit code, and members"
+                      title="Edit squad details, code ID, and members"
                     >
                       <Edit3 className="w-3.5 h-3.5 text-blue-800" />
                       <span>Edit Details</span>
@@ -769,9 +791,9 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                     {/* Delete Team Button */}
                     <button
                       type="button"
-                      onClick={() => handleDeleteTeam(team)}
+                      onClick={() => handleRequestDeleteTeam(team)}
                       className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
-                      title="Delete this squad"
+                      title="Delete this squad with 6-digit authorization PIN"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -863,18 +885,18 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* 6-Digit Institutional Code Number */}
+                  {/* Team Code / ID (Auto-generated or custom e.g. TM-001) */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                      <span>6-Digit Code Number *</span>
-                      <span className="text-[10px] text-teal-700 font-mono font-semibold">Institutional</span>
+                      <span>Team Code / ID *</span>
+                      <span className="text-[10px] text-teal-700 font-mono font-semibold">e.g. TM-001</span>
                     </label>
                     <input
                       type="text"
-                      maxLength={12}
-                      placeholder="e.g. 927624"
-                      value={formCodeNumber}
-                      onChange={e => setFormCodeNumber(e.target.value)}
+                      maxLength={15}
+                      placeholder="e.g. TM-001"
+                      value={formTeamCode}
+                      onChange={e => setFormTeamCode(e.target.value)}
                       className="w-full px-3 py-2 text-xs font-mono font-bold text-blue-950 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -1108,6 +1130,94 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                   <span>Confirm & Finalise</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6-DIGIT PIN DELETION CONFIRMATION MODAL */}
+      {teamToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl border border-rose-200 max-w-md w-full p-6 space-y-5 animate-scaleUp">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-slate-900 font-serif">
+                  Delete Squad Authorization
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  You are attempting to delete <strong className="text-slate-800">{teamToDelete.teamName}</strong> ({teamToDelete.teamCode || teamToDelete.teamNumber}). This action will disband the team and cannot be undone.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setTeamToDelete(null);
+                  setDeletePinInput('');
+                  setDeletePinError(null);
+                }}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 bg-rose-50/70 border border-rose-200/80 rounded-xl space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-rose-900">
+                <ShieldCheck className="w-4 h-4 text-rose-700" />
+                <span>Institutional PIN Required</span>
+              </div>
+              <p className="text-[11px] text-rose-700 leading-relaxed">
+                Please enter the 6-digit administrative security code to confirm squad removal from the portal.
+              </p>
+              <input
+                type="password"
+                maxLength={6}
+                autoFocus
+                placeholder="Enter 6-Digit PIN"
+                value={deletePinInput}
+                onChange={e => {
+                  setDeletePinInput(e.target.value);
+                  if (deletePinError) setDeletePinError(null);
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && deletePinInput.trim().length === 6) {
+                    handleConfirmDeleteWithPin();
+                  }
+                }}
+                className="w-full text-center tracking-[0.4em] font-mono text-base font-bold px-3 py-2 border border-rose-300 rounded-xl bg-white text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+              />
+              {deletePinError && (
+                <p className="text-[11px] font-semibold text-rose-600 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{deletePinError}</span>
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setTeamToDelete(null);
+                  setDeletePinInput('');
+                  setDeletePinError(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteWithPin}
+                disabled={deletePinInput.trim().length < 6}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors shadow-xs cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Confirm Deletion</span>
+              </button>
             </div>
           </div>
         </div>

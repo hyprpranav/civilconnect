@@ -60,7 +60,8 @@ import {
   ChevronLeft,
   ChevronRight,
   BarChart3,
-  Calendar
+  Calendar,
+  Hash
 } from 'lucide-react';
 import Papa from 'papaparse';
 
@@ -491,8 +492,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleConfirmTeam = async () => {
     if (!suggestedTeamDraft) return;
 
+    const nextNum = teams.length + 1;
+    const nextFormatted = nextNum < 10 ? `00${nextNum}` : nextNum < 100 ? `0${nextNum}` : `${nextNum}`;
+
     await storageService.saveTeam({
       id: `team-${Date.now()}`,
+      teamCode: `TM-${nextFormatted}`,
+      teamNumber: `Team ${nextNum < 10 ? '0' + nextNum : nextNum}`,
       teamName: suggestedTeamDraft.teamName,
       projectDomain: suggestedTeamDraft.projectDomain,
       members: suggestedTeamDraft.members,
@@ -898,6 +904,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <tbody className="divide-y divide-slate-100">
                 {paginatedStudents.map(student => {
                   const isChecked = selectedRegNos.includes(student.id);
+                  const assignedTeam = teams.find(t =>
+                    t.members.some(m => {
+                      const mId = (m.studentId || '').toLowerCase().trim();
+                      const mReg = (m.registerNumber || '').toLowerCase().trim();
+                      const sId = (student.id || '').toLowerCase().trim();
+                      const sReg = (student.registerNumber || '').toLowerCase().trim();
+                      return mId === sId || mReg === sReg || mId === sReg || mReg === sId;
+                    })
+                  );
+
                   return (
                     <tr key={student.id} className={`hover:bg-slate-50/70 transition-colors ${isChecked ? 'bg-blue-50/40' : ''}`}>
                       <td className="py-3 px-3">
@@ -917,11 +933,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               student.name.charAt(0)
                             )}
                           </div>
-                          <span className="font-bold text-slate-900 text-xs">{student.name}</span>
+                          <div>
+                            <span className="font-bold text-slate-900 text-xs block">{student.name}</span>
+                            {assignedTeam && (
+                              <span className="text-[10px] text-teal-800 font-semibold truncate block max-w-[140px]" title={assignedTeam.teamName}>
+                                {assignedTeam.teamName}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="py-3 px-3 font-mono font-medium text-blue-900">
-                        {student.registerNumber}
+                        <div>{student.registerNumber}</div>
+                        {assignedTeam && (
+                          <div className="mt-1">
+                            <span 
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-teal-50 text-teal-900 border border-teal-300 shadow-2xs"
+                              title={`Assigned to ${assignedTeam.teamName}`}
+                            >
+                              <Hash className="w-2.5 h-2.5 text-teal-700" />
+                              {assignedTeam.teamCode || assignedTeam.teamNumber || 'TM-001'}
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 px-3 text-slate-600">
                         {student.department} • <span className="font-medium text-slate-800">{student.academicYear}</span>
@@ -1450,6 +1484,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Student Air Profile Card Modal */}
       <AirProfileCardModal
         student={selectedStudent}
+        teams={teams}
         onClose={() => setSelectedStudent(null)}
         onEdit={s => {
           setSelectedStudent(null);

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { StudentProfile } from '../../types';
+import React, { useState, useMemo } from 'react';
+import { StudentProfile, TeamFormation } from '../../types';
 import { storageService } from '../../services/storageService';
 import { cloudinaryService } from '../../services/cloudinaryService';
+import { TeamDetailsModal } from '../common/TeamDetailsModal';
 import { 
   X, 
   User, 
@@ -24,7 +25,10 @@ import {
   Globe,
   Camera,
   Trash2,
-  Loader2
+  Loader2,
+  Hash,
+  Eye,
+  Crown
 } from 'lucide-react';
 
 interface AirProfileCardModalProps {
@@ -35,6 +39,7 @@ interface AirProfileCardModalProps {
   onStudentUpdated?: (updated: StudentProfile) => void;
   onVerifyStudent?: (student: StudentProfile) => void;
   canEditPhoto?: boolean;
+  teams?: TeamFormation[];
 }
 
 export const AirProfileCardModal: React.FC<AirProfileCardModalProps> = ({
@@ -44,11 +49,38 @@ export const AirProfileCardModal: React.FC<AirProfileCardModalProps> = ({
   onInterview,
   onStudentUpdated,
   onVerifyStudent,
-  canEditPhoto = true
+  canEditPhoto = true,
+  teams = []
 }) => {
   const [copied, setCopied] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoToast, setPhotoToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [selectedTeamForModal, setSelectedTeamForModal] = useState<TeamFormation | null>(null);
+
+  const assignedTeam = useMemo(() => {
+    if (!student || !teams || teams.length === 0) return null;
+    const sId = (student.id || '').toLowerCase().trim();
+    const sReg = (student.registerNumber || '').toLowerCase().trim();
+
+    return teams.find(t => 
+      t.members.some(m => {
+        const mId = (m.studentId || '').toLowerCase().trim();
+        const mReg = (m.registerNumber || '').toLowerCase().trim();
+        return mId === sId || mReg === sReg || mId === sReg || mReg === sId;
+      })
+    ) || null;
+  }, [student, teams]);
+
+  const assignedMemberInfo = useMemo(() => {
+    if (!assignedTeam || !student) return null;
+    const sId = (student.id || '').toLowerCase().trim();
+    const sReg = (student.registerNumber || '').toLowerCase().trim();
+    return assignedTeam.members.find(m => {
+      const mId = (m.studentId || '').toLowerCase().trim();
+      const mReg = (m.registerNumber || '').toLowerCase().trim();
+      return mId === sId || mReg === sReg || mId === sReg || mReg === sId;
+    });
+  }, [assignedTeam, student]);
 
   if (!student) return null;
 
@@ -289,6 +321,71 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
         {/* Scrollable Dossier Content */}
         <div className="p-6 overflow-y-auto space-y-5 text-slate-700 text-xs">
           
+          {/* ASSIGNED PROJECT SQUAD INFORMATION */}
+          {assignedTeam ? (
+            <div className="bg-gradient-to-r from-teal-50 via-blue-50 to-indigo-50 border border-teal-200 rounded-2xl p-4 shadow-2xs space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 bg-teal-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Users className="w-3 h-3 text-teal-700" /> Assigned Project Squad
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg text-xs font-mono font-bold bg-teal-600 text-white shadow-2xs flex items-center gap-1">
+                      <Hash className="w-3 h-3 text-teal-100" />
+                      {assignedTeam.teamCode || assignedTeam.teamNumber || 'TM-001'}
+                    </span>
+                    {assignedTeam.teamNumber && assignedTeam.teamNumber !== assignedTeam.teamCode && (
+                      <span className="px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold bg-white text-blue-900 border border-blue-200">
+                        {assignedTeam.teamNumber}
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                      {assignedTeam.status}
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-bold text-slate-900 font-serif">
+                    {assignedTeam.teamName}
+                  </h3>
+
+                  <div className="text-xs text-slate-600 flex items-center gap-2 flex-wrap">
+                    <span>Domain: <strong className="text-teal-900">{assignedTeam.projectDomain}</strong></span>
+                    {assignedMemberInfo && (
+                      <span className="text-blue-900 font-semibold flex items-center gap-1">
+                        • Role: {assignedMemberInfo.assignedRole}
+                        {assignedMemberInfo.isLeader && (
+                          <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                            <Crown className="w-2.5 h-2.5 text-amber-600" /> Leader
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedTeamForModal(assignedTeam)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 rounded-xl transition-all shadow-xs cursor-pointer shrink-0 self-start sm:self-center"
+                  title="View full squad roster and technical details"
+                >
+                  <Eye className="w-3.5 h-3.5 text-teal-300" />
+                  <span>View Team Details</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-slate-400" />
+                <span className="text-slate-600">
+                  Team Formation Status: <strong className="text-slate-700">Unassigned (In Matching Pool)</strong>
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-400 font-medium">No team assigned</span>
+            </div>
+          )}
+
           {/* Institutional Data Grid */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
@@ -575,6 +672,15 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
           </div>
         </div>
       </div>
+
+      {/* TEAM DETAILS POPUP MODAL */}
+      <TeamDetailsModal
+        team={selectedTeamForModal}
+        isOpen={!!selectedTeamForModal}
+        onClose={() => setSelectedTeamForModal(null)}
+        currentStudentId={student.id}
+        userRole="ADMIN"
+      />
     </div>
   );
 };

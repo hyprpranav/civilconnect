@@ -10,11 +10,17 @@ import {
   TrendingUp, 
   HelpCircle,
   Lightbulb,
-  Building2
+  Building2,
+  Hash,
+  Eye,
+  Crown,
+  Star,
+  Layers
 } from 'lucide-react';
 import { teamService, SkillCategoryBreakdown } from '../../services/teamService';
 import { storageService } from '../../services/storageService';
 import { TeamFormation, StudentProfile } from '../../types';
+import { TeamDetailsModal } from '../common/TeamDetailsModal';
 
 interface StudentTeamsTabProps {
   currentStudent: StudentProfile;
@@ -23,8 +29,8 @@ interface StudentTeamsTabProps {
 export const StudentTeamsTab: React.FC<StudentTeamsTabProps> = ({ currentStudent }) => {
   const [skillStats, setSkillStats] = useState<SkillCategoryBreakdown | null>(null);
   const [teams, setTeams] = useState<TeamFormation[]>([]);
-  const [myTeam, setMyTeam] = useState<TeamFormation | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTeamForView, setSelectedTeamForView] = useState<TeamFormation | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -35,11 +41,6 @@ export const StudentTeamsTab: React.FC<StudentTeamsTabProps> = ({ currentStudent
         // Students can only see confirmed and finalised teams, never drafts
         const publicTeams = allTeams.filter(t => t.status !== 'Draft');
         setTeams(publicTeams);
-
-        const assigned = publicTeams.find(t => 
-          t.members.some(m => m.studentId.toLowerCase() === currentStudent.id.toLowerCase())
-        );
-        setMyTeam(assigned || null);
       } catch (err) {
         console.error('Failed to load team analytics', err);
       } finally {
@@ -48,6 +49,9 @@ export const StudentTeamsTab: React.FC<StudentTeamsTabProps> = ({ currentStudent
     }
     loadData();
   }, [currentStudent]);
+
+  const studentRegNormalized = (currentStudent.registerNumber || '').toLowerCase().trim();
+  const studentIdNormalized = (currentStudent.id || '').toLowerCase().trim();
 
   return (
     <div className="space-y-6">
@@ -58,61 +62,167 @@ export const StudentTeamsTab: React.FC<StudentTeamsTabProps> = ({ currentStudent
             <Sparkles className="w-3.5 h-3.5" /> Department Team Hub
           </div>
           <h2 className="text-xl sm:text-2xl font-bold font-serif">
-            Student Skill Distribution & Team Opportunities
+            Department Project Squads & Skill Analytics
           </h2>
           <p className="text-xs text-blue-200 leading-relaxed">
-            CIVIL CONNECT algorithms map interdisciplinary teams pairing leaders, technical engineers, and operational coordinators. Private personal details remain strictly protected.
+            All registered and published teams formed by the faculty committee are listed below. Click on any squad to view member details and technical domains.
           </p>
         </div>
       </div>
 
-      {/* Student Assigned Team Card (if any) */}
-      {myTeam ? (
-        <div className="bg-emerald-50/80 border border-emerald-300 rounded-2xl p-6 shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Confirmed Team Assignment
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-200 text-emerald-950">
-              {myTeam.status}
-            </span>
-          </div>
-
-          <h3 className="text-lg font-bold text-emerald-950 font-serif">
-            Team: {myTeam.teamName}
-          </h3>
-          <p className="text-xs text-emerald-800">
-            Project Domain: <span className="font-semibold">{myTeam.projectDomain}</span>
-          </p>
-
-          <div className="pt-2 border-t border-emerald-200/60">
-            <h4 className="text-xs font-bold text-emerald-900 mb-2">Team Members:</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-              {myTeam.members.map(m => (
-                <div key={m.studentId} className="bg-white/80 p-2.5 rounded-xl border border-emerald-200 text-xs">
-                  <div className="font-bold text-slate-900">{m.name}</div>
-                  <div className="text-[11px] text-slate-500 font-mono">{m.registerNumber} • {m.department}</div>
-                  <div className="text-[10px] font-semibold text-emerald-700 mt-1">
-                    Role: {m.assignedRole} {m.isLeader && '👑 (Leader)'}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="space-y-1 text-center sm:text-left">
-            <h3 className="text-sm font-bold text-slate-900">Current Team Formation Status: Pending Mapping</h3>
-            <p className="text-xs text-slate-500 max-w-xl">
-              You are currently in the active student matching pool. Once the faculty committee forms and verifies your project team, your team roster and competition assignments will be unlocked here.
+      {/* ALL FORMED TEAMS GRID (VISIBLE TO ALL STUDENTS) */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 font-serif flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-700" />
+              Published Department Squads ({teams.length})
+            </h3>
+            <p className="text-xs text-slate-500">
+              Browse formed project teams. If you are enrolled in a team, your squad card will highlight your active assignment.
             </p>
           </div>
-          <span className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200">
-            Profile Status: {currentStudent.profileStatus}
-          </span>
         </div>
-      )}
+
+        {teams.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-2">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+              <Layers className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-800 font-serif">No Teams Formed Yet</h4>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Department project teams are currently being formulated by faculty mentors. Once finalised, squad rosters will appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {teams.map(team => {
+              // Check if current student is a member of this team
+              const currentMemberInfo = team.members.find(m => {
+                const mReg = (m.registerNumber || '').toLowerCase().trim();
+                const mId = (m.studentId || '').toLowerCase().trim();
+                return (
+                  mReg === studentRegNormalized ||
+                  mId === studentIdNormalized ||
+                  mReg === studentIdNormalized ||
+                  mId === studentRegNormalized
+                );
+              });
+
+              const isCurrentStudentInTeam = !!currentMemberInfo;
+
+              return (
+                <div
+                  key={team.id}
+                  className={`bg-white rounded-2xl border transition-all duration-200 hover:shadow-md flex flex-col justify-between overflow-hidden relative ${
+                    isCurrentStudentInTeam
+                      ? 'border-emerald-300 ring-2 ring-emerald-400/30 shadow-xs'
+                      : 'border-slate-200 shadow-2xs hover:border-slate-300'
+                  }`}
+                >
+                  {/* PERSONAL MEMBERSHIP BANNER (IF IN TEAM) */}
+                  {isCurrentStudentInTeam && (
+                    <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-4 py-2 text-xs font-bold flex items-center justify-between shrink-0">
+                      <span className="flex items-center gap-1.5">
+                        <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300 animate-pulse" />
+                        <span>You are in this Team!</span>
+                      </span>
+                      {currentMemberInfo.isLeader && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-300 text-amber-950 flex items-center gap-1">
+                          <Crown className="w-3 h-3 text-amber-900" /> Leader
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* CARD HEADER */}
+                  <div className={`p-4 sm:p-5 space-y-3 flex-1 ${
+                    isCurrentStudentInTeam ? 'bg-emerald-50/30' : 'bg-slate-50/40'
+                  }`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Team Code Badge */}
+                        <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-teal-50 text-teal-900 border border-teal-300 flex items-center gap-1">
+                          <Hash className="w-3 h-3 text-teal-700" />
+                          <strong>{team.teamCode || team.teamNumber || 'TM-001'}</strong>
+                        </span>
+
+                        {/* Team Number (if different from code) */}
+                        {team.teamNumber && team.teamNumber !== team.teamCode && (
+                          <span className="px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold bg-blue-50 text-blue-900 border border-blue-200">
+                            {team.teamNumber}
+                          </span>
+                        )}
+
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Finalised
+                        </span>
+                      </div>
+
+                      {/* Member Count */}
+                      <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                        {team.members.length} / {team.targetSize || 5} Mbrs
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-base font-bold font-serif text-slate-900">
+                        {team.teamName}
+                      </h4>
+                      <p className="text-xs text-teal-800 font-semibold mt-0.5">
+                        Domain: {team.projectDomain}
+                      </p>
+                    </div>
+
+                    {/* Assigned Role Pill if current student is in team */}
+                    {isCurrentStudentInTeam && (
+                      <div className="bg-emerald-100/70 border border-emerald-300/70 rounded-xl p-2.5 text-xs text-emerald-950">
+                        <span className="text-[10px] uppercase font-bold text-emerald-800 block">Your Assigned Role:</span>
+                        <div className="font-bold flex items-center gap-1.5 mt-0.5">
+                          <span>{currentMemberInfo.assignedRole}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Target Competition */}
+                    {team.targetCompetition && (
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span className="truncate">{team.targetCompetition}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CARD FOOTER WITH VIEW DETAILS BUTTON */}
+                  <div className="p-3.5 bg-white border-t border-slate-200 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      {team.members.length} members
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTeamForView(team)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 hover:text-white bg-blue-50 hover:bg-blue-900 border border-blue-200 hover:border-blue-900 rounded-xl transition-all cursor-pointer shadow-2xs"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View Details</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* TEAM DETAILS READ-ONLY MODAL FOR STUDENT */}
+      <TeamDetailsModal
+        team={selectedTeamForView}
+        isOpen={!!selectedTeamForView}
+        onClose={() => setSelectedTeamForView(null)}
+        currentStudentId={currentStudent.id}
+        userRole="STUDENT"
+      />
 
       {/* Cohort Skill Aggregations (Privacy Preserving) */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">

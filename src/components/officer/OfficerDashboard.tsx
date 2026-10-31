@@ -5,10 +5,11 @@ import {
   OfficerRequest, 
   RequestCategory, 
   Department, 
-  AcademicYear,
-  ALL_DEPARTMENTS,
-  PendingAccountRequest,
-  Announcement
+  AcademicYear, 
+  ALL_DEPARTMENTS, 
+  PendingAccountRequest, 
+  Announcement, 
+  TeamFormation 
 } from '../../types';
 import { storageService } from '../../services/storageService';
 import { AdminAnalyticsView } from '../admin/AdminAnalyticsView';
@@ -49,7 +50,8 @@ import {
   GraduationCap, 
   Sparkles,
   Award,
-  Layers
+  Layers,
+  Hash
 } from 'lucide-react';
 
 interface OfficerDashboardProps {
@@ -124,10 +126,22 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   const [addFeedback, setAddFeedback] = useState<{ success: boolean; message: string } | null>(null);
   const [isAddingStudent, setIsAddingStudent] = useState(false);
 
+  const [teams, setTeams] = useState<TeamFormation[]>([]);
+
   useEffect(() => {
     loadRequests();
     loadPendingStudentSignups();
+    loadTeams();
   }, []);
+
+  const loadTeams = async () => {
+    try {
+      const allTeams = await storageService.getTeams();
+      setTeams(allTeams);
+    } catch (err) {
+      console.error('Failed to load teams', err);
+    }
+  };
 
   const loadRequests = async () => {
     try {
@@ -557,32 +571,60 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredStudents.slice(0, 30).map(s => (
-                    <tr key={s.id} className="hover:bg-blue-50/40 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-100 border-2 border-blue-300 text-blue-900 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden shadow-xs">
-                            {s.profileImage ? (
-                              <img src={s.profileImage} alt={s.name} className="w-full h-full object-cover" />
-                            ) : (
-                              s.name.charAt(0)
-                            )}
+                  filteredStudents.slice(0, 30).map(s => {
+                    const assignedTeam = teams.find(t =>
+                      t.members.some(m => {
+                        const mId = (m.studentId || '').toLowerCase().trim();
+                        const mReg = (m.registerNumber || '').toLowerCase().trim();
+                        const sId = (s.id || '').toLowerCase().trim();
+                        const sReg = (s.registerNumber || '').toLowerCase().trim();
+                        return mId === sId || mReg === sReg || mId === sReg || mReg === sId;
+                      })
+                    );
+
+                    return (
+                      <tr key={s.id} className="hover:bg-blue-50/40 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 border-2 border-blue-300 text-blue-900 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden shadow-xs">
+                              {s.profileImage ? (
+                                <img src={s.profileImage} alt={s.name} className="w-full h-full object-cover" />
+                              ) : (
+                                s.name.charAt(0)
+                              )}
+                            </div>
+                            <div>
+                              <span className="font-extrabold text-slate-950 text-sm block">
+                                {s.name}
+                              </span>
+                              {assignedTeam ? (
+                                <span className="text-[11px] text-teal-800 font-semibold truncate block max-w-[150px]" title={assignedTeam.teamName}>
+                                  {assignedTeam.teamName}
+                                </span>
+                              ) : (
+                                <span className="text-[11px] text-slate-500 font-medium">
+                                  {s.club || 'Engineering Association'}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <span className="font-extrabold text-slate-950 text-sm block">
-                              {s.name}
-                            </span>
-                            <span className="text-[11px] text-slate-500 font-medium">
-                              {s.club || 'Engineering Association'}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="font-mono font-bold text-xs text-blue-950 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
-                          {s.registerNumber}
-                        </span>
-                      </td>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-mono font-bold text-xs text-blue-950 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+                            {s.registerNumber}
+                          </span>
+                          {assignedTeam && (
+                            <div className="mt-1">
+                              <span 
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-teal-50 text-teal-900 border border-teal-300 shadow-2xs"
+                                title={`Assigned to ${assignedTeam.teamName}`}
+                              >
+                                <Hash className="w-2.5 h-2.5 text-teal-700" />
+                                {assignedTeam.teamCode || assignedTeam.teamNumber || 'TM-001'}
+                              </span>
+                            </div>
+                          )}
+                        </td>
                       <td className="py-3.5 px-4">
                         <div className="space-y-0.5">
                           <span className="font-semibold text-slate-900 block text-xs">
@@ -654,8 +696,9 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
+                  );
+                })
+              )}
               </tbody>
             </table>
           </div>
@@ -1017,6 +1060,7 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
       {/* Official Student Dossier • AIR Profile Card Modal (Identical to Admin Dashboard) */}
       <AirProfileCardModal
         student={viewingStudent}
+        teams={teams}
         onClose={() => setViewingStudent(null)}
         onEdit={s => {
           setViewingStudent(null);

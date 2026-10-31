@@ -272,9 +272,9 @@ export interface TeamMember {
 
 export interface TeamFormation {
   id: string;
+  teamCode: string; // e.g. "TM-001", "TM-002" (TM represents Team, followed by 3-digit number)
   teamNumber?: string;
   teamName: string;
-  codeNumber?: string; // 6-digit institutional code e.g. "927624"
   targetSize?: number;
   projectDomain: string;
   members: TeamMember[];
@@ -286,6 +286,7 @@ export interface TeamFormation {
   updatedAt?: string;
   status: 'Draft' | 'Finalised' | 'Forming' | 'Confirmed' | 'Active' | 'Disbanded';
   notes?: string;
+  codeNumber?: string;
 }
 
 export interface SystemSettings {
