@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StudentProfile } from '../../types';
+import { storageService } from '../../services/storageService';
+import { cloudinaryService } from '../../services/cloudinaryService';
 import { 
   X, 
   User, 
@@ -19,27 +21,38 @@ import {
   Check, 
   ShieldCheck, 
   Link as LinkIcon, 
-  Globe 
+  Globe,
+  Camera,
+  Trash2,
+  Loader2
 } from 'lucide-react';
 
 interface AirProfileCardModalProps {
   student: StudentProfile | null;
   onClose: () => void;
   onEdit?: (student: StudentProfile) => void;
+  onStudentUpdated?: (updated: StudentProfile) => void;
+  onVerifyStudent?: (student: StudentProfile) => void;
+  canEditPhoto?: boolean;
 }
 
 export const AirProfileCardModal: React.FC<AirProfileCardModalProps> = ({
   student,
   onClose,
-  onEdit
+  onEdit,
+  onStudentUpdated,
+  onVerifyStudent,
+  canEditPhoto = true
 }) => {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoToast, setPhotoToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   if (!student) return null;
 
   const handleCopySummary = () => {
     const summary = `${student.name} (${student.registerNumber}) - ${student.department}, ${student.academicYear}
-Email: ${student.email} | Phone: ${student.phone}
+Email: ${student.email} | Phone: ${student.phone}${student.dob ? ` | DOB: ${student.dob}` : ''}
 Club: ${student.club} | Profile Completion: ${student.profileCompletionPercentage}%
 Skills: ${student.skills?.strongestSkills.join(', ') || 'N/A'}
 Preferred Role: ${student.teamPreferences?.preferredRole || 'N/A'}
@@ -51,6 +64,65 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDirectPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !student) return;
+
+    setIsUploadingPhoto(true);
+    setPhotoToast(null);
+
+    try {
+      const res = await cloudinaryService.uploadProfileImage(file, student.registerNumber || student.email);
+      if (res.success && res.imageUrl) {
+        const updatedStudent: StudentProfile = {
+          ...student,
+          profileImage: res.imageUrl,
+          cloudinaryPublicId: res.publicId,
+          updatedAt: new Date().toISOString()
+        };
+
+        await storageService.saveStudent(updatedStudent);
+        storageService.saveUserAvatar(updatedStudent.email, res.imageUrl);
+        storageService.saveUserAvatar(updatedStudent.registerNumber, res.imageUrl);
+
+        onStudentUpdated?.(updatedStudent);
+        setPhotoToast({ type: 'success', text: 'Profile picture updated successfully!' });
+      } else {
+        setPhotoToast({ type: 'error', text: res.message || 'Image upload failed. Try again.' });
+      }
+    } catch (err: any) {
+      setPhotoToast({ type: 'error', text: err.message || 'Error uploading photo.' });
+    } finally {
+      setIsUploadingPhoto(false);
+      setTimeout(() => setPhotoToast(null), 3500);
+    }
+  };
+
+  const handleDirectPhotoRemove = async () => {
+    if (!student) return;
+    setIsUploadingPhoto(true);
+    try {
+      const updatedStudent: StudentProfile = {
+        ...student,
+        profileImage: undefined,
+        cloudinaryPublicId: undefined,
+        updatedAt: new Date().toISOString()
+      };
+
+      await storageService.saveStudent(updatedStudent);
+      storageService.removeUserAvatar(student.email);
+      storageService.removeUserAvatar(student.registerNumber);
+
+      onStudentUpdated?.(updatedStudent);
+      setPhotoToast({ type: 'success', text: 'Profile picture removed.' });
+    } catch (err: any) {
+      setPhotoToast({ type: 'error', text: 'Failed to remove photo.' });
+    } finally {
+      setIsUploadingPhoto(false);
+      setTimeout(() => setPhotoToast(null), 3000);
+    }
   };
 
   return (
@@ -70,9 +142,20 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
             </div>
 
             <div className="flex items-center gap-2">
+              {student.profileStatus !== 'verified' && onVerifyStudent && (
+                <button
+                  onClick={() => onVerifyStudent(student)}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                  title="Verify Student Profile"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Verify</span>
+                </button>
+              )}
+
               <button
                 onClick={handleCopySummary}
-                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs transition-colors flex items-center gap-1"
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs transition-colors flex items-center gap-1 cursor-pointer"
                 title="Copy Student Summary"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
@@ -81,7 +164,7 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
 
               <button
                 onClick={handlePrint}
-                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs transition-colors flex items-center gap-1"
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs transition-colors flex items-center gap-1 cursor-pointer"
                 title="Print Profile Dossier"
               >
                 <Printer className="w-3.5 h-3.5" />
@@ -90,16 +173,16 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
 
               <button
                 onClick={onClose}
-                className="text-white/70 hover:text-white p-1 rounded-lg transition-colors ml-1"
+                className="text-white/70 hover:text-white p-1 rounded-lg transition-colors ml-1 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* Student Identity Core */}
+          {/* Student Identity Core with Photo Upload Capability */}
           <div className="mt-4 flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-white/10 border-2 border-white/20 shadow-md shrink-0 flex items-center justify-center text-blue-200">
+            <div className="relative group w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-white/10 border-2 border-white/20 shadow-md shrink-0 flex items-center justify-center text-blue-200">
               {student.profileImage ? (
                 <img
                   src={student.profileImage}
@@ -108,6 +191,42 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
                 />
               ) : (
                 <User className="w-12 h-12 text-blue-300" />
+              )}
+
+              {/* Upload overlay for Staff & Admin */}
+              {canEditPhoto && (
+                isUploadingPhoto ? (
+                  <div className="absolute inset-0 bg-slate-950/75 flex items-center justify-center text-white">
+                    <Loader2 className="w-6 h-6 animate-spin text-teal-300" />
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-1 transition-opacity p-1">
+                    <label className="cursor-pointer flex flex-col items-center text-white hover:text-teal-300 transition-colors">
+                      <Camera className="w-4 h-4 mb-0.5" />
+                      <span className="text-[9px] font-bold uppercase tracking-wider">Change</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleDirectPhotoUpload}
+                      />
+                    </label>
+                    {student.profileImage && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDirectPhotoRemove();
+                        }}
+                        className="text-red-300 hover:text-red-100 p-0.5 text-[9px] font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
+                        title="Remove photo"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Remove</span>
+                      </button>
+                    )}
+                  </div>
+                )
               )}
             </div>
 
@@ -153,6 +272,18 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
           </div>
         </div>
 
+        {/* Photo Toast Banner */}
+        {photoToast && (
+          <div className={`px-6 py-2 text-xs font-bold flex items-center justify-between ${
+            photoToast.type === 'success' ? 'bg-emerald-100 text-emerald-900' : 'bg-red-100 text-red-900'
+          }`}>
+            <span>{photoToast.text}</span>
+            <button onClick={() => setPhotoToast(null)} className="p-0.5">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Scrollable Dossier Content */}
         <div className="p-6 overflow-y-auto space-y-5 text-slate-700 text-xs">
           
@@ -170,22 +301,30 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
               <span className="text-[10px] uppercase font-bold text-slate-400">Phone / WhatsApp</span>
               <p className="font-semibold text-slate-900 mt-0.5">
                 <a href={`tel:${student.phone}`} className="hover:underline">
-                  {student.phone}
+                  {student.phone || 'N/A'}
                 </a>
               </p>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400">Club / Association</span>
               <p className="font-semibold text-slate-900 truncate mt-0.5" title={student.club}>
-                {student.club}
+                {student.club || 'General Student Body'}
               </p>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400">Track Options</span>
               <p className="font-semibold text-slate-900 mt-0.5">
-                Japanese: <strong className="text-blue-900">{student.japaneseStudent}</strong> • AWS: <strong className="text-blue-900">{student.awsInterested}</strong>
+                Japanese: <strong className="text-blue-900">{student.japaneseStudent || 'No'}</strong> • AWS: <strong className="text-blue-900">{student.awsInterested || 'No'}</strong>
               </p>
             </div>
+            {student.dob && (
+              <div className="col-span-2 sm:col-span-1">
+                <span className="text-[10px] uppercase font-bold text-slate-400">Date of Birth</span>
+                <p className="font-semibold text-slate-900 mt-0.5 font-mono">
+                  {student.dob}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Section 1: Strongest Skills */}
@@ -260,7 +399,7 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
                     <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[10px] text-white ${
                       student.interests.representCollege ? 'bg-emerald-600' : 'bg-slate-300'
                     }`}>✓</span>
-                    <span>Represent College Nationally: <strong>{student.interests.representCollege ? 'Yes' : 'No'}</strong></span>
+                    <span>Represent College in Competitions: <strong>{student.interests.representCollege ? 'Yes' : 'No'}</strong></span>
                   </div>
                 </div>
               </div>
@@ -269,75 +408,93 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
             )}
           </div>
 
-          {/* Section 3: Technical Strengths & Logistics */}
-          <div className="border border-slate-200 rounded-2xl p-4.5 space-y-3">
+          {/* Section 3: Team Roles & Strengths */}
+          <div className="border border-slate-200 rounded-2xl p-4.5 space-y-2.5">
             <h4 className="font-bold text-slate-900 text-xs font-serif flex items-center gap-1.5">
-              <Truck className="w-4 h-4 text-indigo-700" />
+              <Truck className="w-4 h-4 text-blue-700" />
               3. Team Roles & Operational Logistics Capabilities
             </h4>
 
-            <div className="space-y-2">
-              <span className="font-semibold text-slate-800 text-[11px]">Primary Team Contributions:</span>
-              <div className="flex flex-wrap gap-1.5">
-                {student.teamStrengths?.roles.map(r => (
-                  <span key={r} className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-900 border border-indigo-200">
-                    {r}
-                  </span>
-                ))}
-              </div>
-            </div>
+            {student.teamStrengths ? (
+              <div className="space-y-3">
+                {student.teamStrengths.roles && student.teamStrengths.roles.length > 0 && (
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-700 block mb-1">Primary Team Contributions:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {student.teamStrengths.roles.map(role => (
+                        <span key={role} className="px-2.5 py-0.5 rounded-lg text-xs bg-slate-100 text-slate-800 border border-slate-200">
+                          {role}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {student.teamStrengths?.logisticsSkills && student.teamStrengths.logisticsSkills.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                <span className="font-semibold text-slate-800 text-[11px]">Operations & Travel Logistics:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {student.teamStrengths.logisticsSkills.map(l => (
-                    <span key={l} className="px-2.5 py-0.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-900 border border-amber-200">
-                      {l}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+                {student.teamStrengths.logisticsSkills && student.teamStrengths.logisticsSkills.length > 0 && (
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-700 block mb-1">Operational & Logistics Skills:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {student.teamStrengths.logisticsSkills.map(skill => (
+                        <span key={skill} className="px-2.5 py-0.5 rounded-lg text-xs bg-teal-50 text-teal-800 border border-teal-200">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {student.teamStrengths?.additionalContributions && (
-              <p className="text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-[11px]">
-                <strong className="text-slate-900">Additional Contributions:</strong> {student.teamStrengths.additionalContributions}
-              </p>
+                {student.teamStrengths.additionalContributions && (
+                  <p className="text-[11px] text-slate-600 italic">
+                    {student.teamStrengths.additionalContributions}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-slate-400 italic">No team logistics capabilities recorded.</p>
             )}
           </div>
 
-          {/* Section 4: Team Formation Preferences & Links */}
-          <div className="border border-slate-200 rounded-2xl p-4.5 space-y-3">
+          {/* Section 4: Team Formation Preferences */}
+          <div className="border border-slate-200 rounded-2xl p-4.5 space-y-2.5">
             <h4 className="font-bold text-slate-900 text-xs font-serif flex items-center gap-1.5">
               <Users className="w-4 h-4 text-purple-700" />
               4. Team Formation Preferences & Readiness
             </h4>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-[11px]">
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
-                <span className="text-slate-400 uppercase text-[9px] font-bold">Preferred Role</span>
-                <p className="font-bold text-slate-900">{student.teamPreferences?.preferredRole || 'Technical Member'}</p>
+            {student.teamPreferences ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Preferred Role</span>
+                  <span className="font-bold text-slate-900 text-xs">
+                    {student.teamPreferences.preferredRole || 'Technical Member'}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Technical Domain</span>
+                  <span className="font-bold text-slate-900 text-xs">
+                    {student.teamPreferences.preferredTechnicalDomain || 'Civil Eng'}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Team Size</span>
+                  <span className="font-bold text-slate-900 text-xs">
+                    {student.teamPreferences.preferredTeamSize || '4-5'}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Willing to Travel</span>
+                  <span className="font-bold text-slate-900 text-xs">
+                    {student.teamPreferences.willingnessToTravel ? 'Yes' : 'No'}
+                  </span>
+                </div>
               </div>
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
-                <span className="text-slate-400 uppercase text-[9px] font-bold">Technical Domain</span>
-                <p className="font-bold text-slate-900 truncate" title={student.teamPreferences?.preferredTechnicalDomain}>
-                  {student.teamPreferences?.preferredTechnicalDomain || 'Civil Eng'}
-                </p>
-              </div>
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
-                <span className="text-slate-400 uppercase text-[9px] font-bold">Team Size</span>
-                <p className="font-bold text-slate-900">{student.teamPreferences?.preferredTeamSize || '4-5'}</p>
-              </div>
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
-                <span className="text-slate-400 uppercase text-[9px] font-bold">Willing to Travel</span>
-                <p className="font-bold text-slate-900">{student.teamPreferences?.willingnessToTravel ? 'Yes' : 'No'}</p>
-              </div>
-            </div>
+            ) : (
+              <p className="text-slate-400 italic">No formation preferences recorded.</p>
+            )}
 
-            {/* Portfolio Links */}
+            {/* Social & Professional Links */}
             {(student.teamPreferences?.linkedinProfile || student.teamPreferences?.githubProfile || student.teamPreferences?.portfolioWebsite) && (
-              <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-2">
+              <div className="pt-2 flex flex-wrap gap-2">
                 {student.teamPreferences?.linkedinProfile && (
                   <a
                     href={student.teamPreferences.linkedinProfile}
@@ -382,18 +539,20 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
           <div className="flex items-center gap-2">
             {onEdit && (
               <button
+                type="button"
                 onClick={() => {
                   onClose();
                   onEdit(student);
                 }}
-                className="px-3.5 py-1.5 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl"
+                className="px-3.5 py-1.5 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl cursor-pointer transition-colors"
               >
                 Edit Record
               </button>
             )}
             <button
+              type="button"
               onClick={onClose}
-              className="px-4 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl shadow-2xs"
+              className="px-4 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl shadow-2xs cursor-pointer transition-colors"
             >
               Close Dossier
             </button>

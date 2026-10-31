@@ -104,7 +104,20 @@ class StorageService {
       if (Array.isArray(students)) {
         let changed = false;
         students.forEach(s => {
-          if (s.profileImage === '/harish_pranav_profile.jpg' || (s.profileImage && s.profileImage.includes('unsplash'))) {
+          // Explicit cleanup: Remove accidental assignment of Harish Pranav's avatar to LACHUNASRI P
+          if (
+            s.normalizedRegisterNumber === '927625bee062' || 
+            s.email.toLowerCase().includes('927625bee062') ||
+            s.name.toUpperCase().includes('LACHUNASRI')
+          ) {
+            if (s.profileImage) {
+              s.profileImage = undefined;
+              changed = true;
+            }
+            this.removeUserAvatar('927625bee062');
+            this.removeUserAvatar('927625bee062@mkce.ac.in');
+            this.removeUserAvatar('927625BEE062');
+          } else if (s.profileImage === '/harish_pranav_profile.jpg' || (s.profileImage && s.profileImage.includes('unsplash'))) {
             s.profileImage = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber) || undefined;
             changed = true;
           } else if (!s.profileImage) {
@@ -177,6 +190,9 @@ class StorageService {
     if (updatedStudent.profileImage) {
       this.saveUserAvatar(updatedStudent.email, updatedStudent.profileImage);
       this.saveUserAvatar(updatedStudent.registerNumber, updatedStudent.profileImage);
+    } else {
+      this.removeUserAvatar(updatedStudent.email);
+      this.removeUserAvatar(updatedStudent.registerNumber);
     }
 
     return updatedStudent;
@@ -544,6 +560,20 @@ class StorageService {
       localStorage.setItem('civil_connect_user_avatars', JSON.stringify(map));
     } catch (err) {
       console.warn('Failed to save avatar', err);
+    }
+  }
+
+  public removeUserAvatar(identifier: string): void {
+    if (!identifier) return;
+    try {
+      const data = localStorage.getItem('civil_connect_user_avatars');
+      if (!data) return;
+      const map = JSON.parse(data);
+      const key = identifier.toLowerCase().trim();
+      delete map[key];
+      localStorage.setItem('civil_connect_user_avatars', JSON.stringify(map));
+    } catch (err) {
+      console.warn('Failed to remove avatar', err);
     }
   }
 

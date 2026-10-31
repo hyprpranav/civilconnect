@@ -84,13 +84,12 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
         // 3. Save in active auth session
         localStorage.setItem('civil_connect_auth_session', JSON.stringify(updatedUser));
 
-        // 4. Update student profile if matching Harish Pranav
+        // 4. Update student profile if strictly matching Harish Pranav
         try {
           const students = await storageService.getStudents();
           const matchedStudent = students.find(s => 
-            s.email.toLowerCase() === updatedUser.normalizedEmail || 
-            s.name.toLowerCase().includes('harish pranav') ||
-            s.registerNumber.includes('92762')
+            (s.email && s.email.toLowerCase() === updatedUser.normalizedEmail.toLowerCase()) || 
+            (s.name && s.name.toLowerCase().includes('harish pranav'))
           );
           if (matchedStudent) {
             matchedStudent.profileImage = newAvatarUrl;

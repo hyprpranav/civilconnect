@@ -21,6 +21,7 @@ import { ExportCenterView } from './ExportCenterView';
 import { AdminProfileView } from './AdminProfileView';
 import { AdminFeedbackView } from './AdminFeedbackView';
 import { AdminStaffView } from './AdminStaffView';
+import { StudentEditModal } from '../common/StudentEditModal';
 import { 
   Users, 
   Search, 
@@ -291,6 +292,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     });
     setPinModalOpen(true);
+  };
+
+  const handleQuickVerifyStudent = async (student: StudentProfile) => {
+    try {
+      const updated: StudentProfile = {
+        ...student,
+        profileStatus: 'verified',
+        updatedAt: new Date().toISOString()
+      };
+      await storageService.saveStudent(updated);
+      if (selectedStudent?.id === updated.id) {
+        setSelectedStudent(updated);
+      }
+      await storageService.addAuditLog({
+        performedBy: user.uid,
+        performerName: user.name,
+        role: user.role,
+        action: 'STUDENT_VERIFIED',
+        affectedCollection: 'students',
+        affectedRecordIds: [student.id, student.registerNumber],
+        operationStatus: 'success',
+        details: `Administrator verified profile for ${student.name} (${student.registerNumber})`
+      });
+      await onRefreshData();
+    } catch (err) {
+      console.warn('Failed to verify student', err);
+    }
   };
 
   const handleTriggerBulkDelete = () => {
@@ -1594,7 +1622,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <AirProfileCardModal
         student={selectedStudent}
         onClose={() => setSelectedStudent(null)}
-        onEdit={s => setEditingStudent(s)}
+        onEdit={s => {
+          setSelectedStudent(null);
+          setEditingStudent(s);
+        }}
+        onStudentUpdated={async (updated) => {
+          setSelectedStudent(updated);
+          await onRefreshData();
+        }}
+        onVerifyStudent={handleQuickVerifyStudent}
+      />
+
+      {/* Student Edit Record Modal */}
+      <StudentEditModal
+        student={editingStudent}
+        isOpen={!!editingStudent}
+        onClose={() => setEditingStudent(null)}
+        onSave={async (updated) => {
+          setEditingStudent(null);
+          if (selectedStudent?.id === updated.id) {
+            setSelectedStudent(updated);
+          }
+          await onRefreshData();
+        }}
+        userRole={user.role === 'SUPER_ADMIN' ? 'ADMIN' : 'ADMIN'}
       />
     </div>
   );
