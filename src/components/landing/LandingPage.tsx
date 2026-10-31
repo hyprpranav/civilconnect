@@ -25,8 +25,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Brand Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
-              <Building2 className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-xs overflow-hidden p-0.5 border border-slate-700/50">
+              <img src="/mobile-logo.png" alt="CIVIL CONNECT Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-base font-bold text-slate-900 tracking-tight leading-none">

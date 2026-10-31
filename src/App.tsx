@@ -11,6 +11,7 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { PasswordChangeModal } from './components/common/PasswordChangeModal';
 import { IntegrationGuideModal } from './components/common/IntegrationGuideModal';
 import { SupportTicketModal } from './components/common/SupportTicketModal';
+import { PortalLoader } from './components/common/PortalLoader';
 import { Menu, Building2 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -213,15 +214,7 @@ export const App: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
-        <div className="text-center space-y-3">
-          <div className="w-12 h-12 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <h2 className="text-base font-bold text-slate-900">CIVIL CONNECT</h2>
-          <p className="text-xs text-slate-500">Loading workspace...</p>
-        </div>
-      </div>
-    );
+    return <PortalLoader message="CIVIL CONNECT" subMessage="Synchronizing real-time workspace..." />;
   }
 
   return (
@@ -295,9 +288,11 @@ export const App: React.FC = () => {
                     )}
                   </button>
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
-                      <Building2 className="w-4 h-4" />
-                    </div>
+                    <img 
+                      src="/mobile-logo.png" 
+                      alt="CIVIL CONNECT" 
+                      className="w-8 h-8 rounded-lg object-contain bg-slate-900 shadow-xs shrink-0 p-0.5 border border-slate-700/50" 
+                    />
                     <div className="min-w-0">
                       <span className="text-xs font-bold text-slate-900 block leading-tight truncate">CIVIL CONNECT</span>
                       <span className="text-[10px] font-semibold text-blue-600 block leading-none truncate">
