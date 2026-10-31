@@ -5,12 +5,12 @@ import {
   AuditLogEntry, 
   TeamFormation, 
   SystemSettings, 
-  UserAccount,
-  RequestStatus,
-  Department,
-  AcademicYear,
-  SupportTicket,
-  PendingAccountRequest
+  UserAccount, 
+  RequestStatus, 
+  Department, 
+  AcademicYear, 
+  SupportTicket, 
+  PendingAccountRequest 
 } from '../types';
 import { INITIAL_STUDENTS } from '../data/initialStudents';
 import { 
@@ -20,6 +20,16 @@ import {
   INITIAL_AUDIT_LOGS, 
   DEFAULT_SYSTEM_SETTINGS 
 } from '../data/initialData';
+import { 
+  collection, 
+  doc, 
+  getDocs, 
+  getDoc, 
+  setDoc, 
+  deleteDoc, 
+  writeBatch 
+} from 'firebase/firestore';
+import { getFirestoreDb } from './firebaseConfig';
 
 const STORAGE_KEYS = {
   STUDENTS: 'civil_connect_students',
@@ -33,6 +43,24 @@ const STORAGE_KEYS = {
   ACCOUNT_REQUESTS: 'civil_connect_account_requests',
   INITIALIZED: 'civil_connect_initialized_clean_v5'
 };
+
+// Firestore helper: strips all `undefined` values recursively to avoid FirebaseError
+function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) return null as any;
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeForFirestore(item)) as any;
+  }
+  if (typeof data === 'object') {
+    const clean: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) {
+        clean[key] = sanitizeForFirestore(value);
+      }
+    }
+    return clean;
+  }
+  return data;
+}
 
 // Calculate profile completion percentage (0% for fresh accounts until filled)
 export function calculateProfileCompletion(student: Partial<StudentProfile>): number {
@@ -69,10 +97,10 @@ class StorageService {
   private initDefaults() {
     try {
       const initialized = localStorage.getItem(STORAGE_KEYS.INITIALIZED);
-      if (initialized !== 'civil_connect_initialized_clean_v5') {
+      if (!initialized) {
         localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(INITIAL_STUDENTS));
-        localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify([]));
-        localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(INITIAL_ANNOUNCEMENTS));
+        localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(INITIAL_REQUESTS));
         localStorage.setItem(STORAGE_KEYS.STAFF_ACCOUNTS, JSON.stringify(INITIAL_STAFF_ACCOUNTS));
         localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(INITIAL_AUDIT_LOGS));
         localStorage.setItem(STORAGE_KEYS.TEAMS, JSON.stringify([]));
@@ -86,69 +114,92 @@ class StorageService {
 
   // --- Students Management ---
   public async getStudents(includeArchived = false): Promise<StudentProfile[]> {
-    try {
-      const data = localStorage.getItem(STORAGE_KEYS.STUDENTS);
-      let students: StudentProfile[] = [];
-      if (!data) {
+    let students: StudentProfile[] = [];
+    const db = getFirestoreDb();
+
+    // 1. Try fetching from Cloud Firestore
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'students'));
+        if (!snap.empty) {
+          students = snap.docs.map(d => d.data() as StudentProfile);
+          localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+        } else {
+          // Cloud Firestore is fresh/empty: Batch-seed all initial students to cloud
+          students = INITIAL_STUDENTS;
+          try {
+            const batch = writeBatch(db);
+            students.forEach(s => {
+              const sRef = doc(db, 'students', s.id);
+              batch.set(sRef, sanitizeForFirestore(s));
+            });
+            await batch.commit();
+            console.log('[Firestore] Successfully seeded 97 initial students to Cloud Firestore.');
+          } catch (seedErr) {
+            console.warn('[Firestore] Failed seeding students to cloud:', seedErr);
+          }
+          localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+        }
+      } catch (cloudErr) {
+        console.warn('[Firestore] Students fetch failed, falling back to local cache:', cloudErr);
+      }
+    }
+
+    // 2. Fallback to local storage cache if offline or cloud read failed
+    if (students.length === 0) {
+      try {
+        const data = localStorage.getItem(STORAGE_KEYS.STUDENTS);
+        if (data) {
+          students = JSON.parse(data);
+        }
+      } catch {
+        // ignore
+      }
+      if (!Array.isArray(students) || students.length === 0) {
         students = INITIAL_STUDENTS;
         localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
-      } else {
-        students = JSON.parse(data);
-        if (!Array.isArray(students) || students.length === 0) {
-          students = INITIAL_STUDENTS;
-          localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
-        }
       }
-      
-      // Sync persistent user avatars and purge legacy placeholder paths
-      if (Array.isArray(students)) {
-        let changed = false;
-        students.forEach(s => {
-          // Explicit cleanup: Remove accidental assignment of Harish Pranav's avatar to LACHUNASRI P
-          if (
-            s.normalizedRegisterNumber === '927625bee062' || 
-            s.email.toLowerCase().includes('927625bee062') ||
-            s.name.toUpperCase().includes('LACHUNASRI')
-          ) {
-            if (s.profileImage) {
-              s.profileImage = undefined;
-              changed = true;
-            }
-            this.removeUserAvatar('927625bee062');
-            this.removeUserAvatar('927625bee062@mkce.ac.in');
-            this.removeUserAvatar('927625BEE062');
-          } else if (s.profileImage === '/harish_pranav_profile.jpg' || (s.profileImage && s.profileImage.includes('unsplash'))) {
-            s.profileImage = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber) || undefined;
-            changed = true;
-          } else if (!s.profileImage) {
-            const saved = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber);
-            if (saved) {
-              s.profileImage = saved;
-              changed = true;
-            }
-          }
-        });
-        if (changed) {
-          localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
-        }
-      }
-
-      if (includeArchived) return students;
-      return students.filter(s => !s.isArchived);
-    } catch {
-      return INITIAL_STUDENTS;
     }
+
+    // 3. Synchronize persistent user avatars and purge legacy placeholder paths
+    let changed = false;
+    students.forEach(s => {
+      // Clean up accidental assignment of Harish Pranav's avatar to LACHUNASRI P
+      if (
+        s.normalizedRegisterNumber === '927625bee062' || 
+        s.email.toLowerCase().includes('927625bee062') ||
+        s.name.toUpperCase().includes('LACHUNASRI')
+      ) {
+        if (s.profileImage) {
+          s.profileImage = undefined;
+          changed = true;
+        }
+        this.removeUserAvatar('927625bee062');
+        this.removeUserAvatar('927625bee062@mkce.ac.in');
+        this.removeUserAvatar('927625BEE062');
+      } else if (s.profileImage === '/harish_pranav_profile.jpg' || (s.profileImage && s.profileImage.includes('unsplash'))) {
+        s.profileImage = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber) || undefined;
+        changed = true;
+      } else if (!s.profileImage) {
+        const saved = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber);
+        if (saved) {
+          s.profileImage = saved;
+          changed = true;
+        }
+      }
+    });
+
+    if (changed) {
+      localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+    }
+
+    if (includeArchived) return students;
+    return students.filter(s => !s.isArchived);
   }
 
   public async getArchivedStudents(): Promise<StudentProfile[]> {
-    try {
-      const data = localStorage.getItem(STORAGE_KEYS.STUDENTS);
-      if (!data) return [];
-      const students: StudentProfile[] = JSON.parse(data);
-      return students.filter(s => s.isArchived);
-    } catch {
-      return [];
-    }
+    const students = await this.getStudents(true);
+    return students.filter(s => s.isArchived);
   }
 
   public async getStudentById(identifier: string): Promise<StudentProfile | null> {
@@ -233,14 +284,26 @@ class StorageService {
       students.push(updatedStudent);
     }
 
+    // Save to local cache
     localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
 
+    // Save avatar
     if (updatedStudent.profileImage) {
       this.saveUserAvatar(updatedStudent.email, updatedStudent.profileImage);
       this.saveUserAvatar(updatedStudent.registerNumber, updatedStudent.profileImage);
     } else {
       this.removeUserAvatar(updatedStudent.email);
       this.removeUserAvatar(updatedStudent.registerNumber);
+    }
+
+    // Sync to Cloud Firestore
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'students', normKey), sanitizeForFirestore(updatedStudent), { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed saving student to cloud:', err);
+      }
     }
 
     return updatedStudent;
@@ -297,6 +360,16 @@ class StorageService {
 
     students.push(newStudent);
     localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'students', normReg), sanitizeForFirestore(newStudent));
+      } catch (err) {
+        console.warn('[Firestore] Failed adding student to cloud:', err);
+      }
+    }
+
     return { success: true, message: 'Student registered successfully', student: newStudent };
   }
 
@@ -314,6 +387,20 @@ class StorageService {
     }
 
     localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        if (softDelete) {
+          await setDoc(doc(db, 'students', key), { isArchived: true, archivedAt: new Date().toISOString() }, { merge: true });
+        } else {
+          await deleteDoc(doc(db, 'students', key));
+        }
+      } catch (err) {
+        console.warn('[Firestore] Failed deleting student from cloud:', err);
+      }
+    }
+
     return true;
   }
 
@@ -326,6 +413,16 @@ class StorageService {
     student.isArchived = false;
     delete student.archivedAt;
     localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'students', key), { isArchived: false, archivedAt: null }, { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed restoring student in cloud:', err);
+      }
+    }
+
     return true;
   }
 
@@ -334,12 +431,18 @@ class StorageService {
     const set = new Set(normalizedRegNos.map(s => s.toLowerCase().trim()));
     let count = 0;
 
+    const db = getFirestoreDb();
+    const batch = db ? writeBatch(db) : null;
+
     if (softDelete) {
       students.forEach(s => {
         if (set.has(s.id)) {
           s.isArchived = true;
           s.archivedAt = new Date().toISOString();
           count++;
+          if (batch && db) {
+            batch.set(doc(db, 'students', s.id), { isArchived: true, archivedAt: s.archivedAt }, { merge: true });
+          }
         }
       });
       localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
@@ -347,11 +450,22 @@ class StorageService {
       const remaining = students.filter(s => {
         if (set.has(s.id)) {
           count++;
+          if (batch && db) {
+            batch.delete(doc(db, 'students', s.id));
+          }
           return false;
         }
         return true;
       });
       localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(remaining));
+    }
+
+    if (batch) {
+      try {
+        await batch.commit();
+      } catch (err) {
+        console.warn('[Firestore] Failed bulk delete in cloud:', err);
+      }
     }
 
     return { count };
@@ -375,11 +489,6 @@ class StorageService {
 
     rawRows.forEach((row, i) => {
       const rowNum = i + 1;
-      // Column mappings according to specifications:
-      // Name → name, Register Number → registerNumber, Official college mail id → email, Phone → phone,
-      // Department → department, Year → academicYear, Japanese Student → japaneseStudent,
-      // AWS Interested → awsInterested, Club → club, Status → status, Confirmation ID → confirmationId,
-      // Registration Date → registrationDate
       const name = (row['Name'] || row['name'] || '').trim();
       const regNo = (row['Register Number'] || row['registerNumber'] || row['registernumber'] || '').trim();
       const email = (row['Official college mail id'] || row['email'] || row['Official College Mail ID'] || '').trim();
@@ -412,7 +521,6 @@ class StorageService {
         return;
       }
 
-      // Add to tracking
       existingRegNos.add(normReg);
       existingEmails.add(normEmail);
 
@@ -445,6 +553,22 @@ class StorageService {
     if (newStudents.length > 0) {
       const combined = [...existing, ...newStudents];
       localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(combined));
+
+      const db = getFirestoreDb();
+      if (db) {
+        try {
+          for (let i = 0; i < newStudents.length; i += 400) {
+            const chunk = newStudents.slice(i, i + 400);
+            const batch = writeBatch(db);
+            chunk.forEach(s => {
+              batch.set(doc(db, 'students', s.id), sanitizeForFirestore(s), { merge: true });
+            });
+            await batch.commit();
+          }
+        } catch (err) {
+          console.warn('[Firestore] Failed importing students to cloud:', err);
+        }
+      }
     }
 
     return {
@@ -458,6 +582,19 @@ class StorageService {
 
   // --- Announcements ---
   public async getAnnouncements(): Promise<Announcement[]> {
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'announcements'));
+        if (!snap.empty) {
+          const list = snap.docs.map(d => d.data() as Announcement);
+          localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(list));
+          return list;
+        }
+      } catch (err) {
+        console.warn('[Firestore] Announcements fetch failed:', err);
+      }
+    }
     try {
       const data = localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS);
       if (!data) return INITIAL_ANNOUNCEMENTS;
@@ -476,6 +613,16 @@ class StorageService {
       list.unshift(announcement);
     }
     localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(list));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'announcements', announcement.id), sanitizeForFirestore(announcement));
+      } catch (err) {
+        console.warn('[Firestore] Failed saving announcement:', err);
+      }
+    }
+
     return announcement;
   }
 
@@ -483,11 +630,34 @@ class StorageService {
     const list = await this.getAnnouncements();
     const updated = list.filter(a => a.id !== id);
     localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(updated));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await deleteDoc(doc(db, 'announcements', id));
+      } catch (err) {
+        console.warn('[Firestore] Failed deleting announcement:', err);
+      }
+    }
+
     return true;
   }
 
   // --- Officer Requests ---
   public async getRequests(): Promise<OfficerRequest[]> {
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'requests'));
+        if (!snap.empty) {
+          const list = snap.docs.map(d => d.data() as OfficerRequest);
+          localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(list));
+          return list;
+        }
+      } catch (err) {
+        console.warn('[Firestore] Requests fetch failed:', err);
+      }
+    }
     try {
       const data = localStorage.getItem(STORAGE_KEYS.REQUESTS);
       if (!data) return INITIAL_REQUESTS;
@@ -507,6 +677,16 @@ class StorageService {
     };
     list.unshift(newReq);
     localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(list));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'requests', newReq.requestId), sanitizeForFirestore(newReq));
+      } catch (err) {
+        console.warn('[Firestore] Failed saving request:', err);
+      }
+    }
+
     return newReq;
   }
 
@@ -526,11 +706,44 @@ class StorageService {
     req.resolvedAt = new Date().toISOString();
 
     localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(list));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'requests', requestId), sanitizeForFirestore(req), { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed updating request status:', err);
+      }
+    }
+
     return req;
   }
 
   // --- Audit Logs ---
   public async getAuditLogs(): Promise<AuditLogEntry[]> {
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'auditLogs'));
+        if (!snap.empty) {
+          const logs = snap.docs.map(d => d.data() as AuditLogEntry);
+          logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(logs));
+          return logs;
+        } else {
+          try {
+            const batch = writeBatch(db);
+            INITIAL_AUDIT_LOGS.forEach(l => {
+              batch.set(doc(db, 'auditLogs', l.id), sanitizeForFirestore(l));
+            });
+            await batch.commit();
+          } catch {}
+          return INITIAL_AUDIT_LOGS;
+        }
+      } catch (err) {
+        console.warn('[Firestore] Audit logs fetch failed:', err);
+      }
+    }
     try {
       const data = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
       if (!data) return INITIAL_AUDIT_LOGS;
@@ -548,14 +761,36 @@ class StorageService {
       timestamp: new Date().toISOString()
     };
     logs.unshift(newLog);
-    // Keep last 500 logs
     if (logs.length > 500) logs.pop();
     localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(logs));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'auditLogs', newLog.id), sanitizeForFirestore(newLog));
+      } catch (err) {
+        console.warn('[Firestore] Failed adding audit log:', err);
+      }
+    }
+
     return newLog;
   }
 
   // --- Teams Formation ---
   public async getTeams(): Promise<TeamFormation[]> {
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'teams'));
+        if (!snap.empty) {
+          const teams = snap.docs.map(d => d.data() as TeamFormation);
+          localStorage.setItem(STORAGE_KEYS.TEAMS, JSON.stringify(teams));
+          return teams;
+        }
+      } catch (err) {
+        console.warn('[Firestore] Teams fetch failed:', err);
+      }
+    }
     try {
       const data = localStorage.getItem(STORAGE_KEYS.TEAMS);
       if (!data) return [];
@@ -574,6 +809,16 @@ class StorageService {
       teams.unshift(team);
     }
     localStorage.setItem(STORAGE_KEYS.TEAMS, JSON.stringify(teams));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'teams', team.id), sanitizeForFirestore(team), { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed saving team:', err);
+      }
+    }
+
     return team;
   }
 
@@ -581,10 +826,20 @@ class StorageService {
     const teams = await this.getTeams();
     const updated = teams.filter(t => t.id !== teamId);
     localStorage.setItem(STORAGE_KEYS.TEAMS, JSON.stringify(updated));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await deleteDoc(doc(db, 'teams', teamId));
+      } catch (err) {
+        console.warn('[Firestore] Failed deleting team:', err);
+      }
+    }
+
     return true;
   }
 
-  // --- Dedicated User Avatar Registry (Persists logos/photos across logins & logouts) ---
+  // --- Dedicated User Avatar Registry (Persists logos/photos across logins, logouts, devices) ---
   public getSavedAvatar(identifier?: string): string | null {
     if (!identifier) return null;
     try {
@@ -606,6 +861,18 @@ class StorageService {
       const key = identifier.toLowerCase().trim();
       map[key] = avatarUrl;
       localStorage.setItem('civil_connect_user_avatars', JSON.stringify(map));
+
+      // Persist to Cloud Firestore collection 'avatars'
+      const db = getFirestoreDb();
+      if (db) {
+        setDoc(doc(db, 'avatars', key), {
+          identifier: key,
+          avatarUrl,
+          updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(err => {
+          console.warn('[Firestore] Failed saving avatar to cloud:', err);
+        });
+      }
     } catch (err) {
       console.warn('Failed to save avatar', err);
     }
@@ -620,64 +887,116 @@ class StorageService {
       const key = identifier.toLowerCase().trim();
       delete map[key];
       localStorage.setItem('civil_connect_user_avatars', JSON.stringify(map));
+
+      const db = getFirestoreDb();
+      if (db) {
+        deleteDoc(doc(db, 'avatars', key)).catch(() => {});
+      }
     } catch (err) {
       console.warn('Failed to remove avatar', err);
     }
   }
 
+  public async syncAvatarsFromCloud(): Promise<void> {
+    const db = getFirestoreDb();
+    if (!db) return;
+    try {
+      const snap = await getDocs(collection(db, 'avatars'));
+      if (!snap.empty) {
+        const data = localStorage.getItem('civil_connect_user_avatars');
+        const map = data ? JSON.parse(data) : {};
+        snap.docs.forEach(d => {
+          const rec = d.data();
+          if (rec.identifier && rec.avatarUrl) {
+            map[rec.identifier.toLowerCase().trim()] = rec.avatarUrl;
+          }
+        });
+        localStorage.setItem('civil_connect_user_avatars', JSON.stringify(map));
+      }
+    } catch (err) {
+      console.warn('[Firestore] Avatar sync note:', err);
+    }
+  }
+
   // --- Staff & Admin Management ---
   public async getStaffAccounts(): Promise<UserAccount[]> {
-    try {
-      const data = localStorage.getItem(STORAGE_KEYS.STAFF_ACCOUNTS);
-      let staff: UserAccount[] = data ? JSON.parse(data) : [...INITIAL_STAFF_ACCOUNTS];
-      if (!Array.isArray(staff)) {
+    let staff: UserAccount[] = [];
+    const db = getFirestoreDb();
+
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'staff_accounts'));
+        if (!snap.empty) {
+          staff = snap.docs.map(d => d.data() as UserAccount);
+          localStorage.setItem(STORAGE_KEYS.STAFF_ACCOUNTS, JSON.stringify(staff));
+        } else {
+          // Cloud collection empty: seed INITIAL_STAFF_ACCOUNTS to cloud
+          staff = [...INITIAL_STAFF_ACCOUNTS];
+          try {
+            const batch = writeBatch(db);
+            INITIAL_STAFF_ACCOUNTS.forEach(acc => {
+              batch.set(doc(db, 'staff_accounts', acc.uid), sanitizeForFirestore(acc));
+            });
+            await batch.commit();
+          } catch (seedErr) {
+            console.warn('[Firestore] Failed seeding staff to cloud:', seedErr);
+          }
+          localStorage.setItem(STORAGE_KEYS.STAFF_ACCOUNTS, JSON.stringify(staff));
+        }
+      } catch (err) {
+        console.warn('[Firestore] Staff accounts fetch failed:', err);
+      }
+    }
+
+    if (staff.length === 0) {
+      try {
+        const data = localStorage.getItem(STORAGE_KEYS.STAFF_ACCOUNTS);
+        staff = data ? JSON.parse(data) : [...INITIAL_STAFF_ACCOUNTS];
+      } catch {
         staff = [...INITIAL_STAFF_ACCOUNTS];
       }
-
-      let changed = false;
-
-      // Always guarantee default staff members (like Harish Pranav Dev & Pranav Officer) are present
-      INITIAL_STAFF_ACCOUNTS.forEach(initAcc => {
-        const normEmail = initAcc.normalizedEmail.toLowerCase().trim();
-        const existingIdx = staff.findIndex(
-          s => s.normalizedEmail === normEmail || s.email.toLowerCase().trim() === normEmail
-        );
-        if (existingIdx === -1) {
-          staff.push({ ...initAcc });
-          changed = true;
-        } else {
-          // Fill in missing phone, dob if not present
-          if (!staff[existingIdx].phone && initAcc.phone) {
-            staff[existingIdx].phone = initAcc.phone;
-            changed = true;
-          }
-          if (!staff[existingIdx].dob && initAcc.dob) {
-            staff[existingIdx].dob = initAcc.dob;
-            changed = true;
-          }
-        }
-      });
-
-      staff.forEach(s => {
-        if (s.avatarUrl === '/harish_pranav_profile.jpg' || (s.avatarUrl && s.avatarUrl.includes('unsplash'))) {
-          s.avatarUrl = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber) || undefined;
-          changed = true;
-        } else if (!s.avatarUrl) {
-          const saved = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber);
-          if (saved) {
-            s.avatarUrl = saved;
-            changed = true;
-          }
-        }
-      });
-
-      if (changed) {
-        localStorage.setItem(STORAGE_KEYS.STAFF_ACCOUNTS, JSON.stringify(staff));
-      }
-      return staff;
-    } catch {
-      return [...INITIAL_STAFF_ACCOUNTS];
     }
+
+    let changed = false;
+
+    // Always guarantee default staff members (Harish Pranav Dev & Pranav Officer) are present
+    INITIAL_STAFF_ACCOUNTS.forEach(initAcc => {
+      const normEmail = initAcc.normalizedEmail.toLowerCase().trim();
+      const existingIdx = staff.findIndex(
+        s => s.normalizedEmail === normEmail || s.email.toLowerCase().trim() === normEmail
+      );
+      if (existingIdx === -1) {
+        staff.push({ ...initAcc });
+        changed = true;
+      } else {
+        if (!staff[existingIdx].phone && initAcc.phone) {
+          staff[existingIdx].phone = initAcc.phone;
+          changed = true;
+        }
+        if (!staff[existingIdx].dob && initAcc.dob) {
+          staff[existingIdx].dob = initAcc.dob;
+          changed = true;
+        }
+      }
+    });
+
+    staff.forEach(s => {
+      if (s.avatarUrl === '/harish_pranav_profile.jpg' || (s.avatarUrl && s.avatarUrl.includes('unsplash'))) {
+        s.avatarUrl = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber) || undefined;
+        changed = true;
+      } else if (!s.avatarUrl) {
+        const saved = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber);
+        if (saved) {
+          s.avatarUrl = saved;
+          changed = true;
+        }
+      }
+    });
+
+    if (changed) {
+      localStorage.setItem(STORAGE_KEYS.STAFF_ACCOUNTS, JSON.stringify(staff));
+    }
+    return staff;
   }
 
   public async saveStaffAccount(account: UserAccount): Promise<UserAccount> {
@@ -695,6 +1014,15 @@ class StorageService {
       if (account.registerNumber) this.saveUserAvatar(account.registerNumber, account.avatarUrl);
     }
 
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'staff_accounts', account.uid), sanitizeForFirestore(account), { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed saving staff account to cloud:', err);
+      }
+    }
+
     return account;
   }
 
@@ -702,11 +1030,34 @@ class StorageService {
     const staff = await this.getStaffAccounts();
     const updated = staff.filter(s => s.uid !== uid);
     localStorage.setItem(STORAGE_KEYS.STAFF_ACCOUNTS, JSON.stringify(updated));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await deleteDoc(doc(db, 'staff_accounts', uid));
+      } catch (err) {
+        console.warn('[Firestore] Failed deleting staff account:', err);
+      }
+    }
+
     return true;
   }
 
   // --- System Settings ---
   public async getSettings(): Promise<SystemSettings> {
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        const snap = await getDoc(doc(db, 'systemSettings', 'config'));
+        if (snap.exists()) {
+          const cloudSettings = { ...DEFAULT_SYSTEM_SETTINGS, ...snap.data() } as SystemSettings;
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(cloudSettings));
+          return cloudSettings;
+        }
+      } catch (err) {
+        console.warn('[Firestore] Settings fetch failed:', err);
+      }
+    }
     try {
       const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
       if (!data) return DEFAULT_SYSTEM_SETTINGS;
@@ -720,6 +1071,16 @@ class StorageService {
     const current = await this.getSettings();
     const merged = { ...current, ...updates };
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(merged));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'systemSettings', 'config'), sanitizeForFirestore(merged), { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed updating system settings:', err);
+      }
+    }
+
     return merged;
   }
 
@@ -755,6 +1116,23 @@ class StorageService {
       if (data.auditLogs) localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(data.auditLogs));
       if (data.settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(data.settings));
 
+      // Push restored students and staff to cloud
+      const db = getFirestoreDb();
+      if (db) {
+        try {
+          for (let i = 0; i < data.students.length; i += 400) {
+            const chunk = data.students.slice(i, i + 400);
+            const batch = writeBatch(db);
+            chunk.forEach((s: StudentProfile) => {
+              batch.set(doc(db, 'students', s.id), sanitizeForFirestore(s), { merge: true });
+            });
+            await batch.commit();
+          }
+        } catch (cloudErr) {
+          console.warn('[Firestore] Failed pushing restored students to cloud:', cloudErr);
+        }
+      }
+
       return { success: true, message: `Successfully restored ${data.students.length} student records and system assets.` };
     } catch (err: any) {
       return { success: false, message: `Restore failed: ${err.message}` };
@@ -763,6 +1141,20 @@ class StorageService {
 
   // --- Support Tickets / Issue Reports ---
   public async getSupportTickets(): Promise<SupportTicket[]> {
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'support_tickets'));
+        if (!snap.empty) {
+          const list = snap.docs.map(d => d.data() as SupportTicket);
+          list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          localStorage.setItem(STORAGE_KEYS.SUPPORT_TICKETS, JSON.stringify(list));
+          return list;
+        }
+      } catch (err) {
+        console.warn('[Firestore] Support tickets fetch failed:', err);
+      }
+    }
     try {
       const data = localStorage.getItem(STORAGE_KEYS.SUPPORT_TICKETS);
       if (!data) return [];
@@ -782,6 +1174,15 @@ class StorageService {
     };
     tickets.unshift(newTicket);
     localStorage.setItem(STORAGE_KEYS.SUPPORT_TICKETS, JSON.stringify(tickets));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'support_tickets', newTicket.id), sanitizeForFirestore(newTicket));
+      } catch (err) {
+        console.warn('[Firestore] Failed saving support ticket to cloud:', err);
+      }
+    }
 
     await this.addAuditLog({
       performedBy: ticketData.senderUid,
@@ -819,6 +1220,15 @@ class StorageService {
     tickets[index] = updated;
     localStorage.setItem(STORAGE_KEYS.SUPPORT_TICKETS, JSON.stringify(tickets));
 
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'support_tickets', ticketId), sanitizeForFirestore(updated), { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed updating support ticket in cloud:', err);
+      }
+    }
+
     await this.addAuditLog({
       performedBy: 'admin',
       performerName: adminName,
@@ -837,11 +1247,34 @@ class StorageService {
     const tickets = await this.getSupportTickets();
     const updated = tickets.filter(t => t.id !== ticketId);
     localStorage.setItem(STORAGE_KEYS.SUPPORT_TICKETS, JSON.stringify(updated));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await deleteDoc(doc(db, 'support_tickets', ticketId));
+      } catch (err) {
+        console.warn('[Firestore] Failed deleting support ticket from cloud:', err);
+      }
+    }
+
     return true;
   }
 
   // --- Account Requests (Officer & Student Sign-up Approvals) ---
   public async getPendingAccountRequests(): Promise<PendingAccountRequest[]> {
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'account_requests'));
+        if (!snap.empty) {
+          const list = snap.docs.map(d => d.data() as PendingAccountRequest);
+          localStorage.setItem(STORAGE_KEYS.ACCOUNT_REQUESTS, JSON.stringify(list));
+          return list;
+        }
+      } catch (err) {
+        console.warn('[Firestore] Account requests fetch failed:', err);
+      }
+    }
     try {
       const data = localStorage.getItem(STORAGE_KEYS.ACCOUNT_REQUESTS);
       if (!data) return [];
@@ -881,6 +1314,16 @@ class StorageService {
 
     requests.unshift(newRequest);
     localStorage.setItem(STORAGE_KEYS.ACCOUNT_REQUESTS, JSON.stringify(requests));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'account_requests', newRequest.id), sanitizeForFirestore(newRequest));
+      } catch (err) {
+        console.warn('[Firestore] Failed saving account request to cloud:', err);
+      }
+    }
+
     return { success: true, message: 'Request submitted successfully!', requestId: newRequest.id };
   }
 
@@ -903,12 +1346,7 @@ class StorageService {
     const hashBufferWithSalt = await crypto.subtle.digest('SHA-256', dataWithSalt);
     const passHash = Array.from(new Uint8Array(hashBufferWithSalt)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-    // Legacy un-salted hash for backward compatibility
-    const dataRaw = encoder.encode(plainPass);
-    const hashBufferRaw = await crypto.subtle.digest('SHA-256', dataRaw);
-    const passHashRaw = Array.from(new Uint8Array(hashBufferRaw)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-    // 1. Save into main auth credentials store ('civil_connect_account_credentials')
+    // Save into main auth credentials store ('civil_connect_account_credentials')
     const mainCredsData = localStorage.getItem('civil_connect_account_credentials');
     const mainCreds = mainCredsData ? JSON.parse(mainCredsData) : {};
     mainCreds[req.email.toLowerCase().trim()] = { identifier: req.email.toLowerCase().trim(), hash: passHash, isFirstLogin: false };
@@ -920,14 +1358,28 @@ class StorageService {
     }
     localStorage.setItem('civil_connect_account_credentials', JSON.stringify(mainCreds));
 
-    // 2. Save into secondary legacy store ('civil_connect_passwords')
-    const legacyCredsData = localStorage.getItem('civil_connect_passwords');
-    const legacyCreds = legacyCredsData ? JSON.parse(legacyCredsData) : {};
-    legacyCreds[req.email.toLowerCase().trim()] = { identifier: req.email.toLowerCase().trim(), hash: passHash, isFirstLogin: false };
-    if (req.registerNumber) {
-      legacyCreds[req.registerNumber.toLowerCase().trim()] = { identifier: req.registerNumber.toLowerCase().trim(), hash: passHash, isFirstLogin: false };
+    // Also persist to Cloud Firestore credentials collection
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'credentials', req.email.toLowerCase().trim()), {
+          identifier: req.email.toLowerCase().trim(),
+          hash: passHash,
+          isFirstLogin: false,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        if (req.registerNumber) {
+          await setDoc(doc(db, 'credentials', req.registerNumber.toLowerCase().trim()), {
+            identifier: req.registerNumber.toLowerCase().trim(),
+            hash: passHash,
+            isFirstLogin: false,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        }
+      } catch (err) {
+        console.warn('[Firestore] Failed saving approved credentials to cloud:', err);
+      }
     }
-    localStorage.setItem('civil_connect_passwords', JSON.stringify(legacyCreds));
 
     if (req.role === 'OFFICER') {
       const newOfficer: UserAccount = {
@@ -981,6 +1433,14 @@ class StorageService {
     requests[index] = req;
     localStorage.setItem(STORAGE_KEYS.ACCOUNT_REQUESTS, JSON.stringify(requests));
 
+    if (db) {
+      try {
+        await setDoc(doc(db, 'account_requests', requestId), sanitizeForFirestore(req), { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed updating account request status in cloud:', err);
+      }
+    }
+
     await this.addAuditLog({
       performedBy: approver.uid,
       performerName: approver.name,
@@ -1007,6 +1467,16 @@ class StorageService {
     requests[index].status = 'rejected';
     requests[index].rejectionReason = reason;
     localStorage.setItem(STORAGE_KEYS.ACCOUNT_REQUESTS, JSON.stringify(requests));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'account_requests', requestId), sanitizeForFirestore(requests[index]), { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed updating rejected request in cloud:', err);
+      }
+    }
+
     return { success: true, message: 'Account request declined.' };
   }
 }

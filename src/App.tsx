@@ -47,7 +47,8 @@ export const App: React.FC = () => {
         storageService.getSupportTickets(),
         storageService.getPendingAccountRequests(),
         storageService.getRequests(),
-        storageService.getStaffAccounts()
+        storageService.getStaffAccounts(),
+        storageService.syncAvatarsFromCloud()
       ]);
       setStudents(allStudents);
       setAnnouncements(allAnnouncements);

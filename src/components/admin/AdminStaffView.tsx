@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserAccount, ALL_DEPARTMENTS, Department } from '../../types';
 import { storageService } from '../../services/storageService';
+import { saveUserCredential } from '../../services/authService';
 import { 
   ShieldCheck, 
   Key, 
@@ -124,32 +125,11 @@ export const AdminStaffView: React.FC<AdminStaffViewProps> = ({
       const hashBufferRaw = await crypto.subtle.digest('SHA-256', dataRaw);
       const passHashRaw = Array.from(new Uint8Array(hashBufferRaw)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      // 1. Save to civil_connect_account_credentials
-      const mainCredsData = localStorage.getItem('civil_connect_account_credentials');
-      const mainCreds = mainCredsData ? JSON.parse(mainCredsData) : {};
-      mainCreds[resetPasswordStaff.normalizedEmail] = {
-        identifier: resetPasswordStaff.normalizedEmail,
-        hash: passHash,
-        isFirstLogin: false
-      };
+      // Save to credentials (syncs to local storage and Cloud Firestore)
+      await saveUserCredential(resetPasswordStaff.normalizedEmail, passHash, false);
       if (resetPasswordStaff.normalizedRegisterNumber) {
-        mainCreds[resetPasswordStaff.normalizedRegisterNumber] = {
-          identifier: resetPasswordStaff.normalizedRegisterNumber,
-          hash: passHash,
-          isFirstLogin: false
-        };
+        await saveUserCredential(resetPasswordStaff.normalizedRegisterNumber, passHash, false);
       }
-      localStorage.setItem('civil_connect_account_credentials', JSON.stringify(mainCreds));
-
-      // 2. Save to civil_connect_passwords
-      const legacyCredsData = localStorage.getItem('civil_connect_passwords');
-      const legacyCreds = legacyCredsData ? JSON.parse(legacyCredsData) : {};
-      legacyCreds[resetPasswordStaff.normalizedEmail] = {
-        identifier: resetPasswordStaff.normalizedEmail,
-        hash: passHash,
-        isFirstLogin: false
-      };
-      localStorage.setItem('civil_connect_passwords', JSON.stringify(legacyCreds));
 
       // 3. Update pendingAccountRequests if any
       const accReqs = await storageService.getPendingAccountRequests();
@@ -303,18 +283,11 @@ export const AdminStaffView: React.FC<AdminStaffViewProps> = ({
       const hashBufferWithSalt = await crypto.subtle.digest('SHA-256', dataWithSalt);
       const passHash = Array.from(new Uint8Array(hashBufferWithSalt)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      const mainCredsData = localStorage.getItem('civil_connect_account_credentials');
-      const mainCreds = mainCredsData ? JSON.parse(mainCredsData) : {};
-      mainCreds[cleanEmail] = { identifier: cleanEmail, hash: passHash, isFirstLogin: false };
+      // Save to credentials (syncs to local storage and Cloud Firestore)
+      await saveUserCredential(cleanEmail, passHash, false);
       if (newAccount.normalizedRegisterNumber) {
-        mainCreds[newAccount.normalizedRegisterNumber] = { identifier: newAccount.normalizedRegisterNumber, hash: passHash, isFirstLogin: false };
+        await saveUserCredential(newAccount.normalizedRegisterNumber, passHash, false);
       }
-      localStorage.setItem('civil_connect_account_credentials', JSON.stringify(mainCreds));
-
-      const legacyCredsData = localStorage.getItem('civil_connect_passwords');
-      const legacyCreds = legacyCredsData ? JSON.parse(legacyCredsData) : {};
-      legacyCreds[cleanEmail] = { identifier: cleanEmail, hash: passHash, isFirstLogin: false };
-      localStorage.setItem('civil_connect_passwords', JSON.stringify(legacyCreds));
 
       await storageService.addAuditLog({
         performedBy: currentUser.uid,

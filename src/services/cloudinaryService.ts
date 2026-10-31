@@ -6,16 +6,13 @@ export interface CloudinaryConfig {
 
 const CLOUDINARY_CONFIG_KEY = 'civil_connect_cloudinary_config';
 
-export function getSavedCloudinaryConfig(): CloudinaryConfig | null {
-  try {
-    const stored = localStorage.getItem(CLOUDINARY_CONFIG_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (parsed.cloudName && parsed.uploadPreset) {
-        return parsed;
-      }
-    }
+export const DEFAULT_CLOUDINARY_CONFIG: CloudinaryConfig = {
+  cloudName: 'svwcqxlr',
+  uploadPreset: 'civil_connect_preset'
+};
 
+export function getSavedCloudinaryConfig(): CloudinaryConfig {
+  try {
     const envConfig: CloudinaryConfig = {
       cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '',
       uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || '',
@@ -25,10 +22,18 @@ export function getSavedCloudinaryConfig(): CloudinaryConfig | null {
     if (envConfig.cloudName && envConfig.uploadPreset) {
       return envConfig;
     }
+
+    const stored = localStorage.getItem(CLOUDINARY_CONFIG_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.cloudName && parsed.uploadPreset) {
+        return parsed;
+      }
+    }
   } catch (err) {
     console.warn('Failed to load Cloudinary config', err);
   }
-  return null;
+  return DEFAULT_CLOUDINARY_CONFIG;
 }
 
 export function saveCloudinaryConfig(config: CloudinaryConfig) {
