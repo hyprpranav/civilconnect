@@ -238,8 +238,9 @@ main .bg-slate-100 {
   margin: -10px auto;
   font-family: 'Julius Sans One', sans-serif;
   font-size: 26px;
-  font-weight: 400;
-  color: rgb(155, 152, 152);
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #334155;
   left: 4%;
   top: 5%;
   animation: fontAnim 3.75s infinite;

@@ -3,6 +3,7 @@ import { StudentProfile, TeamFormation } from '../../types';
 import { storageService } from '../../services/storageService';
 import { cloudinaryService } from '../../services/cloudinaryService';
 import { TeamDetailsModal } from '../common/TeamDetailsModal';
+import { getGradeBadgeColor } from '../common/InterviewEvaluationModal';
 import { 
   X, 
   User, 
@@ -28,7 +29,14 @@ import {
   Loader2,
   Hash,
   Eye,
-  Crown
+  Crown,
+  FileSpreadsheet,
+  Edit3,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Lock,
+  EyeOff
 } from 'lucide-react';
 
 interface AirProfileCardModalProps {
@@ -56,6 +64,7 @@ export const AirProfileCardModal: React.FC<AirProfileCardModalProps> = ({
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoToast, setPhotoToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedTeamForModal, setSelectedTeamForModal] = useState<TeamFormation | null>(null);
+  const [isScorecardExpanded, setIsScorecardExpanded] = useState(false);
 
   const assignedTeam = useMemo(() => {
     if (!student || !teams || teams.length === 0) return null;
@@ -426,6 +435,165 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
             )}
           </div>
 
+          {/* 1-to-1 Interview & Competency Evaluation Card */}
+          {student.interviewEvaluation ? (
+            <div className="bg-gradient-to-r from-purple-50 via-indigo-50/50 to-blue-50 border border-purple-200 rounded-2xl p-4.5 shadow-2xs space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-900 bg-purple-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <Award className="w-3.5 h-3.5 text-purple-700" /> 1-to-1 Interview Assessment
+                    </span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getGradeBadgeColor(student.interviewEvaluation.grade)}`}>
+                      Grade: {student.interviewEvaluation.grade}
+                    </span>
+                    {student.interviewEvaluation.isPublishedToStudent ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                        <Eye className="w-3 h-3 text-emerald-600" /> Visible on Student Dashboard
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-amber-700" /> Private (Staff/Admin Only)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-baseline gap-2 pt-1">
+                    <span className="text-2xl font-black text-purple-950 font-serif">
+                      {student.interviewEvaluation.totalMarks} <span className="text-xs font-semibold text-slate-500 font-sans">/ {student.interviewEvaluation.maxTotalMarks || 100} Marks</span>
+                    </span>
+                    <span className="text-xs font-bold text-purple-700 bg-purple-100/80 px-2 py-0.5 rounded-md">
+                      {student.interviewEvaluation.percentage}%
+                    </span>
+                    {student.interviewEvaluation.recommendedRole && (
+                      <span className="text-xs text-slate-600 hidden sm:inline">
+                        • Recommended: <strong className="text-slate-800">{student.interviewEvaluation.recommendedRole}</strong>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Evaluator & Update History Audit Trail */}
+                  <div className="text-[11px] text-slate-500 space-y-0.5 pt-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <User className="w-3 h-3 text-blue-700 shrink-0" />
+                      <span>
+                        First evaluated by <strong className="text-slate-800">{student.interviewEvaluation.initialEvaluatedByName || student.interviewEvaluation.evaluatedByName}</strong> ({student.interviewEvaluation.evaluatorRole}) on {new Date(student.interviewEvaluation.initialEvaluatedAt || student.interviewEvaluation.evaluatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    {student.interviewEvaluation.lastUpdatedAt && student.interviewEvaluation.lastUpdatedByName && (student.interviewEvaluation.lastUpdatedByName !== student.interviewEvaluation.evaluatedByName || student.interviewEvaluation.lastUpdatedAt !== student.interviewEvaluation.evaluatedAt) && (
+                      <div className="flex items-center gap-1.5 text-indigo-700 font-medium">
+                        <Clock className="w-3 h-3 text-indigo-500 shrink-0" />
+                        <span>
+                          Last updated by <strong className="text-slate-900">{student.interviewEvaluation.lastUpdatedByName}</strong> ({student.interviewEvaluation.lastUpdatedByRole || 'Staff'}) on {new Date(student.interviewEvaluation.lastUpdatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsScorecardExpanded(!isScorecardExpanded)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-purple-900 bg-white hover:bg-purple-100/70 border border-purple-300 rounded-xl transition-all shadow-2xs cursor-pointer"
+                    title="View 6-category rubric breakdown"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-purple-700" />
+                    <span>{isScorecardExpanded ? 'Hide Details' : 'View Details'}</span>
+                    {isScorecardExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+
+                  {onInterview && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onInterview(student);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-purple-700 hover:bg-purple-800 rounded-xl transition-all shadow-xs cursor-pointer"
+                      title="Edit marks and feedback"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-purple-200" />
+                      <span>Edit Marks</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Expandable Rubric Breakdown */}
+              {isScorecardExpanded && (
+                <div className="mt-3 pt-3 border-t border-purple-200/80 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {student.interviewEvaluation.criteria.map((c, i) => (
+                      <div key={c.id || i} className="bg-white/90 p-2.5 rounded-xl border border-purple-100 flex items-center justify-between text-xs">
+                        <div className="space-y-0.5 min-w-0 pr-2">
+                          <span className="font-bold text-slate-800 block truncate">{c.name}</span>
+                          <span className="text-[10px] text-slate-400">{c.category}</span>
+                          {c.remarks && (
+                            <p className="text-[11px] text-purple-900 italic mt-0.5">"{c.remarks}"</p>
+                          )}
+                        </div>
+                        <span className="font-mono font-bold text-purple-950 text-xs px-2 py-0.5 bg-purple-50 rounded-lg border border-purple-200 shrink-0">
+                          {c.awardedMarks} / {c.maxMarks}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {student.interviewEvaluation.generalFeedback && (
+                    <div className="bg-white/90 p-3 rounded-xl border border-purple-100 text-xs space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-purple-900">General Evaluator Feedback</span>
+                      <p className="text-slate-700 leading-relaxed">{student.interviewEvaluation.generalFeedback}</p>
+                    </div>
+                  )}
+
+                  {(student.interviewEvaluation.strengths || student.interviewEvaluation.areasForImprovement) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {student.interviewEvaluation.strengths && (
+                        <div className="bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200 space-y-1">
+                          <span className="text-[10px] uppercase font-bold text-emerald-800">Key Strengths</span>
+                          <p className="text-slate-700">{student.interviewEvaluation.strengths}</p>
+                        </div>
+                      )}
+                      {student.interviewEvaluation.areasForImprovement && (
+                        <div className="bg-amber-50/70 p-2.5 rounded-xl border border-amber-200 space-y-1">
+                          <span className="text-[10px] uppercase font-bold text-amber-800">Areas For Growth</span>
+                          <p className="text-slate-700">{student.interviewEvaluation.areasForImprovement}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="space-y-0.5 text-center sm:text-left">
+                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                  <Award className="w-4 h-4 text-slate-400" />
+                  <span className="font-bold text-slate-800">1-to-1 Interview Evaluation: Not Conducted Yet</span>
+                </div>
+                <p className="text-slate-500 text-[11px]">
+                  No competency evaluation scorecard has been logged for this candidate.
+                </p>
+              </div>
+
+              {onInterview && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onInterview(student);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-all shadow-2xs cursor-pointer shrink-0"
+                >
+                  <Award className="w-3.5 h-3.5 text-purple-700" />
+                  <span>Conduct 1-to-1 Interview</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Section 1: Strongest Skills */}
           <div className="border border-slate-200 rounded-2xl p-4.5 space-y-2.5">
             <h4 className="font-bold text-slate-900 text-xs font-serif flex items-center gap-1.5">
@@ -647,7 +815,7 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
                 title="Conduct 1-to-1 Interview Evaluation"
               >
                 <Award className="w-3.5 h-3.5 text-purple-700" />
-                <span>Interview Marks</span>
+                <span>{student.interviewEvaluation ? 'Edit Interview Marks' : 'Interview Marks'}</span>
               </button>
             )}
             {onEdit && (

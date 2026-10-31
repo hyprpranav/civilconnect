@@ -10,7 +10,8 @@ import {
   Department, 
   AcademicYear, 
   SupportTicket, 
-  PendingAccountRequest 
+  PendingAccountRequest,
+  TeamProposalRequest 
 } from '../types';
 import { INITIAL_STUDENTS } from '../data/initialStudents';
 import { 
@@ -42,6 +43,7 @@ const STORAGE_KEYS = {
   SETTINGS: 'civil_connect_settings',
   SUPPORT_TICKETS: 'civil_connect_support_tickets',
   ACCOUNT_REQUESTS: 'civil_connect_account_requests',
+  TEAM_REQUESTS: 'civil_connect_team_requests',
   INITIALIZED: 'civil_connect_initialized_clean_v5'
 };
 
@@ -856,6 +858,207 @@ class StorageService {
     }
 
     return true;
+  }
+
+  // --- Student Team Formation Proposals & Requests ---
+  public async getTeamRequests(): Promise<TeamProposalRequest[]> {
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'team_requests'));
+        if (!snap.empty) {
+          const list = snap.docs.map(d => d.data() as TeamProposalRequest);
+          list.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime());
+          localStorage.setItem(STORAGE_KEYS.TEAM_REQUESTS, JSON.stringify(list));
+          return list;
+        }
+      } catch (err) {
+        console.warn('[Firestore] Team requests fetch failed:', err);
+      }
+    }
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.TEAM_REQUESTS);
+      if (!data) return [];
+      const parsed: TeamProposalRequest[] = JSON.parse(data);
+      parsed.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime());
+      return parsed;
+    } catch {
+      return [];
+    }
+  }
+
+  public async createTeamRequest(
+    request: Omit<TeamProposalRequest, 'id' | 'submissionDate' | 'status'>
+  ): Promise<TeamProposalRequest> {
+    const id = `treq_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const newReq: TeamProposalRequest = {
+      ...request,
+      id,
+      submissionDate: now,
+      status: 'Pending'
+    };
+
+    const list = await this.getTeamRequests();
+    list.unshift(newReq);
+    localStorage.setItem(STORAGE_KEYS.TEAM_REQUESTS, JSON.stringify(list));
+
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'team_requests', id), sanitizeForFirestore(newReq));
+      } catch (err) {
+        console.warn('[Firestore] Failed saving team proposal request:', err);
+      }
+    }
+
+    await this.addAuditLog({
+      performedBy: request.submittedByStudentId,
+      performerName: request.submittedByStudentName,
+      role: 'STUDENT',
+      action: `Team Proposal Submitted: "${request.teamName}" (${request.members.length} members)`,
+      affectedCollection: 'team_requests',
+      affectedRecordIds: [id],
+      operationStatus: 'success',
+      details: `Project Domain: ${request.projectDomain} | Target: ${request.targetCompetition}`
+    });
+
+    return newReq;
+  }
+
+  public async approveTeamRequest(
+    requestId: string,
+    reviewer: { uid: string; name: string; role: any }
+  ): Promise<TeamFormation | null> {
+    const requests = await this.getTeamRequests();
+    const req = requests.find(r => r.id === requestId);
+    if (!req) return null;
+
+    // Generate official team code (e.g. TM001, TM002)
+    const allTeams = await this.getTeams();
+    let nextNum = 1;
+    allTeams.forEach(t => {
+      const match = (t.teamCode || t.teamNumber || '').match(/\d+/);
+      if (match) {
+        const n = parseInt(match[0], 10);
+        if (n >= nextNum) nextNum = n + 1;
+      }
+    });
+    const teamCode = `TM${String(nextNum).padStart(3, '0')}`;
+    const now = new Date().toISOString();
+
+    const createdTeam: TeamFormation = {
+      id: `team_${Date.now()}`,
+      teamCode,
+      teamNumber: teamCode,
+      teamName: req.teamName,
+      targetSize: req.targetSize,
+      projectDomain: req.projectDomain,
+      members: req.members,
+      targetCompetition: req.targetCompetition,
+      createdBy: `Student Proposal: ${req.submittedByStudentName}`,
+      creatorUid: req.submittedByStudentId,
+      creatorRole: 'STUDENT',
+      createdAt: now,
+      status: 'Confirmed',
+      notes: req.notes
+    };
+
+    await this.saveTeam(createdTeam);
+
+    // Update the request document
+    req.status = 'Approved';
+    req.reviewedBy = reviewer.name;
+    req.reviewedAt = now;
+    req.resultingTeamId = createdTeam.id;
+    req.resultingTeamCode = teamCode;
+
+    localStorage.setItem(STORAGE_KEYS.TEAM_REQUESTS, JSON.stringify(requests));
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'team_requests', requestId), sanitizeForFirestore(req), { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed updating approved team request:', err);
+      }
+    }
+
+    await this.addAuditLog({
+      performedBy: reviewer.uid,
+      performerName: reviewer.name,
+      role: reviewer.role,
+      action: `Approved Student Team Proposal: "${req.teamName}" -> ${teamCode}`,
+      affectedCollection: 'teams',
+      affectedRecordIds: [createdTeam.id, requestId],
+      operationStatus: 'success',
+      details: `Formed official squad with ${req.members.length} student members.`
+    });
+
+    return createdTeam;
+  }
+
+  public async rejectTeamRequest(
+    requestId: string,
+    reviewer: { uid: string; name: string; role: any },
+    reason?: string
+  ): Promise<boolean> {
+    const requests = await this.getTeamRequests();
+    const req = requests.find(r => r.id === requestId);
+    if (!req) return false;
+
+    const now = new Date().toISOString();
+    req.status = 'Rejected';
+    req.reviewedBy = reviewer.name;
+    req.reviewedAt = now;
+    req.rejectionReason = reason || 'Proposal not approved by faculty committee at this time.';
+
+    localStorage.setItem(STORAGE_KEYS.TEAM_REQUESTS, JSON.stringify(requests));
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'team_requests', requestId), sanitizeForFirestore(req), { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Failed updating rejected team request:', err);
+      }
+    }
+
+    await this.addAuditLog({
+      performedBy: reviewer.uid,
+      performerName: reviewer.name,
+      role: reviewer.role,
+      action: `Rejected Student Team Proposal: "${req.teamName}"`,
+      affectedCollection: 'team_requests',
+      affectedRecordIds: [requestId],
+      operationStatus: 'warning',
+      details: `Reason: ${req.rejectionReason}`
+    });
+
+    return true;
+  }
+
+  public subscribeToTeamRequests(callback: (requests: TeamProposalRequest[]) => void): () => void {
+    const db = getFirestoreDb();
+    if (!db) {
+      this.getTeamRequests().then(callback);
+      return () => {};
+    }
+    try {
+      const unsub = onSnapshot(collection(db, 'team_requests'), (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map(d => d.data() as TeamProposalRequest);
+          list.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime());
+          localStorage.setItem(STORAGE_KEYS.TEAM_REQUESTS, JSON.stringify(list));
+          callback(list);
+        }
+      }, (err) => {
+        console.warn('[Firestore] Team requests listener failed:', err);
+        this.getTeamRequests().then(callback);
+      });
+      return unsub;
+    } catch {
+      this.getTeamRequests().then(callback);
+      return () => {};
+    }
   }
 
   // --- Dedicated User Avatar Registry (Persists logos/photos across logins, logouts, devices) ---

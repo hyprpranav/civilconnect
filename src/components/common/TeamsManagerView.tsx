@@ -24,7 +24,7 @@ import {
   Eye,
   Info
 } from 'lucide-react';
-import { TeamFormation, TeamMember, StudentProfile, UserAccount, Department } from '../../types';
+import { TeamFormation, TeamMember, StudentProfile, UserAccount, Department, TeamProposalRequest } from '../../types';
 import { storageService } from '../../services/storageService';
 import { teamService } from '../../services/teamService';
 
@@ -52,9 +52,15 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
   const isAdmin = currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN';
 
   const [teams, setTeams] = useState<TeamFormation[]>([]);
-  const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'finalised' | 'drafts'>('all');
+  const [teamProposals, setTeamProposals] = useState<TeamProposalRequest[]>([]);
+  const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'finalised' | 'drafts' | 'proposals'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [domainFilter, setDomainFilter] = useState('ALL');
+
+  // Proposal Action States
+  const [proposalActionLoading, setProposalActionLoading] = useState<string | null>(null);
+  const [rejectingProposal, setRejectingProposal] = useState<TeamProposalRequest | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   // Modal State for Create / Edit Team
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -97,7 +103,48 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
 
   useEffect(() => {
     loadTeams();
+    const unsub = storageService.subscribeToTeamRequests(requests => {
+      setTeamProposals(requests);
+    });
+    return () => unsub();
   }, []);
+
+  const handleApproveProposal = async (req: TeamProposalRequest) => {
+    setProposalActionLoading(req.id);
+    try {
+      const created = await storageService.approveTeamRequest(req.id, currentUser);
+      if (created) {
+        await loadTeams();
+        if (onTeamUpdated) onTeamUpdated();
+        setFeedback({
+          type: 'success',
+          text: `Proposal "${req.teamName}" approved! Official squad formed with code ${created.teamCode || created.teamNumber}.`
+        });
+      }
+    } catch (err: any) {
+      setFeedback({ type: 'error', text: err.message || 'Failed to approve proposal.' });
+    } finally {
+      setProposalActionLoading(null);
+    }
+  };
+
+  const handleRejectProposal = async () => {
+    if (!rejectingProposal) return;
+    setProposalActionLoading(rejectingProposal.id);
+    try {
+      await storageService.rejectTeamRequest(rejectingProposal.id, currentUser, rejectionReason.trim());
+      setFeedback({
+        type: 'success',
+        text: `Proposal "${rejectingProposal.teamName}" rejected.`
+      });
+      setRejectingProposal(null);
+      setRejectionReason('');
+    } catch (err: any) {
+      setFeedback({ type: 'error', text: err.message || 'Failed to reject proposal.' });
+    } finally {
+      setProposalActionLoading(null);
+    }
+  };
 
   // Filtered Teams based on Visibility rules:
   // - If team is 'Draft', ONLY creator sees it (or Admin if viewing admin overview)
@@ -149,6 +196,27 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
     t.status === 'Draft' && 
     ((t.creatorUid && t.creatorUid === currentUser.uid) || (t.createdBy && t.createdBy.toLowerCase() === currentUser.name.toLowerCase()))
   ).length;
+  const pendingProposalsCount = teamProposals.filter(p => p.status === 'Pending').length;
+
+  // Filtered Proposals list for search and domain
+  const filteredProposals = useMemo(() => {
+    return teamProposals.filter(p => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesName = p.teamName.toLowerCase().includes(q);
+        const matchesSubmitter = (p.submittedByStudentName || p.submittedByName || '').toLowerCase().includes(q) || 
+                                 (p.submittedByStudentRegNo || p.submittedByRegNo || '').toLowerCase().includes(q);
+        const matchesDomain = (p.projectDomain || '').toLowerCase().includes(q);
+        const matchesMember = p.members.some(m => 
+          (m.name || '').toLowerCase().includes(q) || (m.registerNumber || '').toLowerCase().includes(q)
+        );
+        if (!matchesName && !matchesSubmitter && !matchesDomain && !matchesMember) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [teamProposals, searchQuery]);
 
   // Open Create Modal
   const handleOpenCreateModal = () => {
@@ -593,6 +661,23 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
               <Clock className="w-3.5 h-3.5 text-amber-600" />
               <span>My Drafts ({myDraftsCount})</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTabFilter('proposals')}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTabFilter === 'proposals'
+                  ? 'bg-white text-indigo-900 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Send className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Student Proposals ({teamProposals.length})</span>
+              {pendingProposalsCount > 0 && (
+                <span className="px-1.5 py-0.2 bg-amber-500 text-white rounded-full text-[10px] font-black animate-pulse">
+                  {pendingProposalsCount}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Search Box */}
@@ -609,32 +694,238 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
         </div>
       </div>
 
-      {/* TEAMS GRID LIST */}
-      {visibleTeams.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-            <Layers className="w-6 h-6" />
+      {/* PROPOSALS OR TEAMS GRID */}
+      {activeTabFilter === 'proposals' ? (
+        filteredProposals.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto">
+              <Send className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800 font-serif">
+              No Student Proposals Found
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Students can propose custom squads and submit requests from their Team & Cohort section using the "Create Your Team & Submit Request" feature.
+            </p>
           </div>
-          <h3 className="text-base font-bold text-slate-800 font-serif">
-            No Teams Found
-          </h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            {activeTabFilter === 'drafts'
-              ? 'You do not have any private draft teams. Create a team and choose "Save as Draft" to work on it privately.'
-              : 'No project teams have been registered matching your criteria. Click "Create New Team" to form the first squad.'}
-          </p>
-          <button
-            type="button"
-            onClick={handleOpenCreateModal}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 rounded-xl shadow-xs transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create Team Now</span>
-          </button>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {filteredProposals.map(proposal => {
+              const isPending = proposal.status === 'Pending';
+              const isApproved = proposal.status === 'Approved';
+              const isRejected = proposal.status === 'Rejected';
+
+              return (
+                <div
+                  key={proposal.id}
+                  className={`bg-white rounded-2xl border transition-all hover:shadow-md flex flex-col justify-between overflow-hidden ${
+                    isPending
+                      ? 'border-amber-300 ring-2 ring-amber-100/50 shadow-xs'
+                      : isApproved
+                      ? 'border-emerald-200 bg-emerald-50/20'
+                      : 'border-slate-200 opacity-80'
+                  }`}
+                >
+                  {/* Card Header */}
+                  <div className={`p-4 sm:p-5 border-b space-y-2.5 ${
+                    isPending ? 'bg-amber-50/40 border-amber-200/60' : isApproved ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-slate-50 border-slate-100'
+                  }`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
+                            isPending
+                              ? 'bg-amber-100 text-amber-900 border-amber-300'
+                              : isApproved
+                              ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                              : 'bg-rose-100 text-rose-900 border-rose-300'
+                          }`}>
+                            {isPending && <Clock className="w-3 h-3 text-amber-600 animate-pulse" />}
+                            {isApproved && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                            {isRejected && <X className="w-3 h-3 text-rose-600" />}
+                            <span>{proposal.status} Proposal</span>
+                          </span>
+
+                          {proposal.resultingTeamCode && (
+                            <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-teal-50 text-teal-900 border border-teal-300 flex items-center gap-1">
+                              <Hash className="w-3 h-3 text-teal-700" />
+                              <span>{proposal.resultingTeamCode}</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="text-base font-bold font-serif text-slate-900 mt-2">
+                          {proposal.teamName}
+                        </h3>
+                        <div className="text-xs text-indigo-900 font-semibold mt-0.5">
+                          Domain: {proposal.projectDomain}
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <div className="text-xs font-bold text-slate-700 font-mono">
+                          {proposal.members.length} / {proposal.targetSize}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-medium">Members</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/60 text-[11px] text-slate-600">
+                      <span className="flex items-center gap-1">
+                        <UserCheck className="w-3.5 h-3.5 text-blue-700" />
+                        <span>Proposed by: <strong className="text-slate-800">{proposal.submittedByStudentName || proposal.submittedByName}</strong> ({proposal.submittedByStudentRegNo || proposal.submittedByRegNo})</span>
+                      </span>
+                      <span className="flex items-center gap-1 text-slate-400 font-mono text-[10px]">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(proposal.submissionDate || proposal.submittedAt || Date.now()).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-4 sm:p-5 space-y-4 flex-1">
+                    {/* Target Competition */}
+                    <div className="text-xs text-slate-600">
+                      <strong className="text-slate-800">Target Event: </strong>
+                      <span>{proposal.targetCompetition || 'Hackathon / Project Exhibition'}</span>
+                    </div>
+
+                    {/* Concept Notes */}
+                    {proposal.notes && (
+                      <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 italic">
+                        "{proposal.notes}"
+                      </div>
+                    )}
+
+                    {/* Proposed Member Roster */}
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-serif flex items-center justify-between">
+                        <span>Proposed Squad Roster</span>
+                        <span>Role Allocation</span>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {proposal.members.map((member, idx) => (
+                          <div
+                            key={idx}
+                            className={`p-2 rounded-xl border text-xs flex items-center justify-between gap-2 ${
+                              member.isLeader ? 'bg-amber-50/60 border-amber-200' : 'bg-slate-50 border-slate-200/70'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {member.isLeader ? (
+                                <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+                              ) : (
+                                <div className="w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] flex items-center justify-center font-bold">
+                                  {idx + 1}
+                                </div>
+                              )}
+                              <div className="truncate">
+                                <div className="font-bold text-slate-900 truncate">
+                                  {member.name}
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono">
+                                  {member.registerNumber} • {member.department}
+                                </div>
+                              </div>
+                            </div>
+
+                            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border shrink-0 ${
+                              member.isLeader ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-blue-50 text-blue-900 border-blue-200'
+                            }`}>
+                              {member.assignedRole || (member.isLeader ? 'Team Leader' : 'Core Engineer')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Audit Info for Approved or Rejected */}
+                    {isApproved && (
+                      <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <div>
+                          <div>Approved by <strong>{proposal.reviewedBy || proposal.reviewedByName || 'Staff / Admin'}</strong> on {new Date(proposal.reviewedAt || proposal.submissionDate || proposal.submittedAt || Date.now()).toLocaleDateString()}</div>
+                          {proposal.resultingTeamCode && (
+                            <div className="text-[11px] text-emerald-700 font-mono">Created Team ID: <strong>{proposal.resultingTeamCode}</strong></div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {isRejected && (
+                      <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-900 flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        <div>
+                          <div>Rejected by <strong>{proposal.reviewedBy || proposal.reviewedByName || 'Staff / Admin'}</strong> on {new Date(proposal.reviewedAt || proposal.submissionDate || proposal.submittedAt || Date.now()).toLocaleDateString()}</div>
+                          {(proposal.rejectionReason || proposal.reviewFeedback) && (
+                            <div className="text-[11px] text-rose-700 mt-1">Feedback: "{proposal.rejectionReason || proposal.reviewFeedback}"</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions Footer */}
+                  {isPending && (
+                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRejectingProposal(proposal);
+                          setRejectionReason('');
+                        }}
+                        disabled={proposalActionLoading === proposal.id}
+                        className="px-3.5 py-2 text-xs font-bold text-rose-700 hover:text-rose-800 bg-white hover:bg-rose-50 border border-rose-300 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Reject Proposal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleApproveProposal(proposal)}
+                        disabled={proposalActionLoading === proposal.id}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {proposalActionLoading === proposal.id ? (
+                          <Clock className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        )}
+                        <span>Approve & Form Squad</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {visibleTeams.map(team => {
+        visibleTeams.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+              <Layers className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800 font-serif">
+              No Teams Found
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              {activeTabFilter === 'drafts'
+                ? 'You do not have any private draft teams. Create a team and choose "Save as Draft" to work on it privately.'
+                : 'No project teams have been registered matching your criteria. Click "Create New Team" to form the first squad.'}
+            </p>
+            <button
+              type="button"
+              onClick={handleOpenCreateModal}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Team Now</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {visibleTeams.map(team => {
             const isDraft = team.status === 'Draft';
             const isCreator = (team.creatorUid && team.creatorUid === currentUser.uid) || 
                               (team.createdBy && team.createdBy.toLowerCase() === currentUser.name.toLowerCase());
@@ -803,7 +1094,7 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
             );
           })}
         </div>
-      )}
+      ))}
 
       {/* TEAM CREATION & EDIT MODAL */}
       {isModalOpen && (
@@ -1217,6 +1508,72 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Confirm Deletion</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REJECT PROPOSAL MODAL */}
+      {rejectingProposal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl border border-slate-200">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-rose-600">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-rose-600" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 font-serif">
+                    Reject Team Proposal
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    "{rejectingProposal.teamName}"
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRejectingProposal(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-700">
+                Reason / Feedback for Students (Optional):
+              </label>
+              <textarea
+                rows={3}
+                placeholder="e.g. Please balance members across different departments or re-assign the lead..."
+                value={rejectionReason}
+                onChange={e => setRejectionReason(e.target.value)}
+                className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 bg-slate-50 focus:bg-white"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setRejectingProposal(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRejectProposal}
+                disabled={proposalActionLoading === rejectingProposal.id}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {proposalActionLoading === rejectingProposal.id ? (
+                  <Clock className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <X className="w-3.5 h-3.5" />
+                )}
+                <span>Confirm Rejection</span>
               </button>
             </div>
           </div>

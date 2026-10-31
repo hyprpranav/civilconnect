@@ -63,6 +63,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // 12. Team Requests Collection: Student-submitted team formation proposals & requests
+    match /team_requests/{requestId} {
+      allow read, write: if true;
+    }
+
     // Catch-all fallback for any auxiliary nested sub-collections
     match /{document=**} {
       allow read, write: if true;

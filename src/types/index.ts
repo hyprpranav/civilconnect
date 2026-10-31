@@ -185,7 +185,13 @@ export interface InterviewEvaluation {
   evaluatedByName: string;
   evaluatorRole: UserRole;
   evaluatedAt: string;
+  // Audit & update tracking (first evaluator vs updater)
   lastUpdatedAt?: string;
+  lastUpdatedByUid?: string;
+  lastUpdatedByName?: string;
+  lastUpdatedByRole?: UserRole;
+  initialEvaluatedByName?: string;
+  initialEvaluatedAt?: string;
   criteria: InterviewCriterionMark[];
   totalMarks: number;
   maxTotalMarks: number;
@@ -198,6 +204,31 @@ export interface InterviewEvaluation {
   isPublishedToStudent: boolean;
   publishedAt?: string;
   publishedBy?: string;
+}
+
+export interface TeamProposalRequest {
+  id: string;
+  teamName: string;
+  targetSize: number;
+  projectDomain: string;
+  targetCompetition: string;
+  members: TeamMember[];
+  submittedByStudentId: string;
+  submittedByStudentName: string;
+  submittedByStudentRegNo: string;
+  submissionDate: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  reviewedBy?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  notes?: string;
+  resultingTeamId?: string;
+  resultingTeamCode?: string;
+  submittedByName?: string;
+  submittedByRegNo?: string;
+  submittedAt?: string;
+  reviewedByName?: string;
+  reviewFeedback?: string;
 }
 
 export type RequestCategory =

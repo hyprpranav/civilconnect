@@ -15,12 +15,17 @@ import {
   Eye,
   Crown,
   Star,
-  Layers
+  Layers,
+  UserPlus,
+  Plus,
+  Send,
+  AlertCircle
 } from 'lucide-react';
 import { teamService, SkillCategoryBreakdown } from '../../services/teamService';
 import { storageService } from '../../services/storageService';
-import { TeamFormation, StudentProfile } from '../../types';
+import { TeamFormation, StudentProfile, TeamProposalRequest } from '../../types';
 import { TeamDetailsModal } from '../common/TeamDetailsModal';
+import { CreateTeamProposalModal } from './CreateTeamProposalModal';
 
 interface StudentTeamsTabProps {
   currentStudent: StudentProfile;
@@ -29,8 +34,10 @@ interface StudentTeamsTabProps {
 export const StudentTeamsTab: React.FC<StudentTeamsTabProps> = ({ currentStudent }) => {
   const [skillStats, setSkillStats] = useState<SkillCategoryBreakdown | null>(null);
   const [teams, setTeams] = useState<TeamFormation[]>([]);
+  const [teamProposals, setTeamProposals] = useState<TeamProposalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeamForView, setSelectedTeamForView] = useState<TeamFormation | null>(null);
+  const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -48,6 +55,24 @@ export const StudentTeamsTab: React.FC<StudentTeamsTabProps> = ({ currentStudent
       }
     }
     loadData();
+
+    // Real-time listener for student's submitted team proposals
+    const sId = (currentStudent.id || '').toLowerCase().trim();
+    const sReg = (currentStudent.registerNumber || '').toLowerCase().trim();
+
+    const unsub = storageService.subscribeToTeamRequests(requests => {
+      const myProposals = requests.filter(r => 
+        (r.submittedByStudentId && r.submittedByStudentId.toLowerCase() === sId) ||
+        (r.submittedByStudentRegNo && r.submittedByStudentRegNo.toLowerCase() === sReg) ||
+        r.members.some(m => 
+          (m.studentId && m.studentId.toLowerCase() === sId) ||
+          (m.registerNumber && m.registerNumber.toLowerCase() === sReg)
+        )
+      );
+      setTeamProposals(myProposals);
+    });
+
+    return () => unsub();
   }, [currentStudent]);
 
   const studentRegNormalized = (currentStudent.registerNumber || '').toLowerCase().trim();
@@ -56,7 +81,7 @@ export const StudentTeamsTab: React.FC<StudentTeamsTabProps> = ({ currentStudent
   return (
     <div className="space-y-6">
       {/* Overview Banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-blue-950 to-slate-900 text-white rounded-2xl p-6 shadow-sm relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-900 via-blue-950 to-slate-900 text-white rounded-2xl p-6 shadow-sm relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative z-10 max-w-2xl space-y-2">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-800/60 text-teal-300 border border-teal-500/30">
             <Sparkles className="w-3.5 h-3.5" /> Department Team Hub
@@ -65,10 +90,139 @@ export const StudentTeamsTab: React.FC<StudentTeamsTabProps> = ({ currentStudent
             Department Project Squads & Skill Analytics
           </h2>
           <p className="text-xs text-blue-200 leading-relaxed">
-            All registered and published teams formed by the faculty committee are listed below. Click on any squad to view member details and technical domains.
+            Form competition teams with your peers, assign specialized roles, or browse confirmed department project squads.
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setIsProposalModalOpen(true)}
+          className="relative z-10 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-lg transition-all cursor-pointer shrink-0 self-start sm:self-center"
+        >
+          <UserPlus className="w-4 h-4 text-slate-950" />
+          <span>Create Your Team & Submit Request</span>
+        </button>
       </div>
+
+      {/* MY SUBMITTED TEAM PROPOSALS SECTION */}
+      {teamProposals.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-900 flex items-center justify-center font-bold">
+                <Send className="w-4 h-4 text-teal-700" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 font-serif">
+                  My Team Formation Proposals ({teamProposals.length})
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Track the approval status of your student-submitted project squads.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsProposalModalOpen(true)}
+              className="px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors cursor-pointer"
+            >
+              + Propose Another Team
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {teamProposals.map(req => {
+              return (
+                <div 
+                  key={req.id}
+                  className={`p-4 rounded-xl border transition-all space-y-3 ${
+                    req.status === 'Approved'
+                      ? 'bg-emerald-50/50 border-emerald-200'
+                      : req.status === 'Rejected'
+                      ? 'bg-rose-50/50 border-rose-200'
+                      : 'bg-amber-50/40 border-amber-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-slate-900 text-sm font-serif">
+                          {req.teamName}
+                        </span>
+                        {req.resultingTeamCode && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-teal-600 text-white">
+                            {req.resultingTeamCode}
+                          </span>
+                        )}
+                        {req.status === 'Pending' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-600" /> Pending Faculty Review
+                          </span>
+                        )}
+                        {req.status === 'Approved' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Approved & Confirmed
+                          </span>
+                        )}
+                        {req.status === 'Rejected' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-900 border border-rose-300 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 text-rose-600" /> Rejected
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-500 block mt-0.5">
+                        Domain: <strong className="text-slate-800">{req.projectDomain}</strong> • For: <strong className="text-slate-800">{req.targetCompetition}</strong>
+                      </span>
+                    </div>
+
+                    <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                      {new Date(req.submissionDate).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {/* Members list */}
+                  <div className="bg-white/80 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                      Proposed Roster ({req.members.length} Members)
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {req.members.map(m => (
+                        <span 
+                          key={m.studentId}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200"
+                        >
+                          {m.isLeader && <Crown className="w-2.5 h-2.5 text-amber-600" />}
+                          <strong className="text-slate-900">{m.name}</strong>
+                          <span className="text-[9px] text-blue-600">({m.assignedRole})</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {req.notes && (
+                    <p className="text-[11px] text-slate-600 italic">
+                      "{req.notes}"
+                    </p>
+                  )}
+
+                  {req.rejectionReason && req.status === 'Rejected' && (
+                    <div className="p-2 bg-rose-100/70 border border-rose-200 rounded-lg text-[11px] text-rose-900">
+                      <strong>Faculty Feedback:</strong> {req.rejectionReason}
+                    </div>
+                  )}
+
+                  {req.reviewedBy && (
+                    <div className="text-[10px] text-slate-400">
+                      Reviewed by {req.reviewedBy} on {new Date(req.reviewedAt || req.submissionDate).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ALL FORMED TEAMS GRID (VISIBLE TO ALL STUDENTS) */}
       <div className="space-y-4">
@@ -334,6 +488,25 @@ export const StudentTeamsTab: React.FC<StudentTeamsTabProps> = ({ currentStudent
           </div>
         </div>
       </div>
+
+      {/* Create Team Proposal Modal */}
+      <CreateTeamProposalModal
+        currentStudent={currentStudent}
+        isOpen={isProposalModalOpen}
+        onClose={() => setIsProposalModalOpen(false)}
+        onSubmitted={() => {
+          // Handled via real-time subscription
+        }}
+      />
+
+      {/* Team Details Modal */}
+      {selectedTeamForView && (
+        <TeamDetailsModal
+          team={selectedTeamForView}
+          isOpen={Boolean(selectedTeamForView)}
+          onClose={() => setSelectedTeamForView(null)}
+        />
+      )}
     </div>
   );
 };
