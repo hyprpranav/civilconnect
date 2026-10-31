@@ -64,7 +64,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   };
 
   const renderSidebarContent = (isMobileView: boolean) => (
-    <div className="flex flex-col h-full bg-white select-none">
+    <div className={`flex flex-col h-full ${isMobileView ? 'bg-white' : 'bg-white/85 backdrop-blur-md'} select-none`}>
       {/* Brand Header */}
       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
@@ -469,7 +469,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   return (
     <>
       {/* Desktop Sidebar: Permanent left rail on large screens (>= lg / 1024px) */}
-      <aside className="hidden lg:flex w-64 bg-white border-r border-slate-200/90 flex-col shrink-0 h-screen sticky top-0 font-sans z-30 select-none shadow-xs">
+      <aside className="hidden lg:flex w-64 bg-white/90 backdrop-blur-md border-r border-slate-200/90 flex-col shrink-0 h-screen sticky top-0 font-sans z-30 select-none shadow-xs">
         {renderSidebarContent(false)}
       </aside>
 

@@ -224,7 +224,7 @@ export const App: React.FC = () => {
             undefined;
 
           return (
-            <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50/75 backdrop-blur-2xs">
+            <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-transparent">
             {/* Left Navigation Sidebar (Desktop rail + Mobile off-canvas drawer) */}
             <AppSidebar
               currentUser={currentUser}
@@ -249,9 +249,9 @@ export const App: React.FC = () => {
             />
 
             {/* Right Main Content Column */}
-            <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+            <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-transparent">
               {/* Sticky Mobile Top Header Bar (< lg) */}
-              <header className="lg:hidden shrink-0 bg-white border-b border-slate-200 px-3.5 py-2.5 flex items-center justify-between z-20 shadow-2xs">
+              <header className="lg:hidden shrink-0 bg-white/90 backdrop-blur-md border-b border-slate-200 px-3.5 py-2.5 flex items-center justify-between z-20 shadow-2xs">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <button
                     type="button"
@@ -302,7 +302,7 @@ export const App: React.FC = () => {
               </header>
 
             {/* Scrollable Main View Area */}
-            <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8">
+            <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8 bg-transparent">
               {currentUser.role === 'STUDENT' && currentStudent && (
                 <StudentDashboard
                   user={currentUser}

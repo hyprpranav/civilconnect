@@ -78,7 +78,7 @@
   background: #64748b;
 }
 
-/* Slightly dull background watermark layer for portal */
+/* Slightly dull atmospheric background watermark layer across portal */
 .portal-bg-watermark {
   position: fixed;
   inset: 0;
@@ -86,8 +86,38 @@
   z-index: 0;
   background-image: url('/bgweb.png');
   background-size: cover;
-  background-position: center;
+  background-position: center top;
   background-repeat: no-repeat;
-  opacity: 0.085;
-  filter: contrast(0.96) brightness(1.02);
+  opacity: 0.22;
+  filter: contrast(1.05) brightness(1.0);
+}
+
+/* Dashboard Glassmorphism: cards and panels are translucent with backdrop blur so the watermark is visible inside dashboards */
+main {
+  background: transparent !important;
+}
+
+main .bg-white {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+main .bg-slate-50 {
+  background-color: rgba(248, 250, 252, 0.78) !important;
+}
+
+main .bg-slate-100 {
+  background-color: rgba(241, 245, 249, 0.80) !important;
+}
+
+/* Modals, dialogs, popovers, and floating menus remain solid white for focus and contrast */
+.fixed.inset-0 .bg-white,
+[role="dialog"] .bg-white,
+.modal-container .bg-white,
+.z-50 .bg-white,
+.z-40 .bg-white {
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
