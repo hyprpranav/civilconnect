@@ -132,6 +132,14 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
     loadRequests();
     loadPendingStudentSignups();
     loadTeams();
+
+    const unsubTeams = storageService.subscribeToTeams((liveTeams) => {
+      setTeams(liveTeams);
+    });
+
+    return () => {
+      unsubTeams();
+    };
   }, []);
 
   const loadTeams = async () => {

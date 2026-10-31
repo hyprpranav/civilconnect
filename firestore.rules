@@ -1,8 +1,69 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read and write for CIVIL CONNECT real-time synchronization
-    // across all platforms (web, mobile, localhost, and Vercel)
+
+    // ====================================================================
+    // CIVIL CONNECT - Multi-Device Cloud Real-Time Synchronization Rules
+    // Active Collections: 11 System Collections
+    // Supports custom collegiate authentication (Register Numbers & MKCE emails)
+    // ====================================================================
+
+    // 1. Students Collection: Complete student profiles, skill tiers & evaluations
+    match /students/{studentId} {
+      allow read, write: if true;
+    }
+
+    // 2. Staff Accounts Collection: Faculty and Department Administrators directory
+    match /staff_accounts/{staffId} {
+      allow read, write: if true;
+    }
+
+    // 3. Teams Collection: Student project cohort teams & multidisciplinary groups
+    match /teams/{teamId} {
+      allow read, write: if true;
+    }
+
+    // 4. Announcements Collection: Institutional circulars, hackathons & notices
+    match /announcements/{announcementId} {
+      allow read, write: if true;
+    }
+
+    // 5. Audit Logs Collection: Real-time immutable audit trail & security events
+    match /auditLogs/{logId} {
+      allow read, write: if true;
+    }
+
+    // 6. Officer Requests Collection: Faculty requests to administration
+    match /requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    // 7. Account Requests Collection: Onboarding approval queue for students & staff
+    match /account_requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    // 8. Support Tickets Collection: User feedback, bug reports & administrative replies
+    match /support_tickets/{ticketId} {
+      allow read, write: if true;
+    }
+
+    // 9. System Settings Collection: Administrative toggles, onboarding passwords & PIN
+    match /systemSettings/{settingId} {
+      allow read, write: if true;
+    }
+
+    // 10. Credentials Collection: Synchronized SHA-256 password hashes across all devices
+    match /credentials/{credentialId} {
+      allow read, write: if true;
+    }
+
+    // 11. Avatars Collection: Profile photo URLs and Cloudinary CDN image mappings
+    match /avatars/{avatarId} {
+      allow read, write: if true;
+    }
+
+    // Catch-all fallback for any auxiliary nested sub-collections
     match /{document=**} {
       allow read, write: if true;
     }

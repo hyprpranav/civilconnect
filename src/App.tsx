@@ -36,7 +36,36 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadAppInitialState();
+
+    // 1. Live real-time Firestore subscription to Students collection
+    const unsubStudents = storageService.subscribeToStudents((liveStudents) => {
+      setStudents(liveStudents);
+    });
+
+    // 2. Live real-time Firestore subscription to Announcements
+    const unsubAnnouncements = storageService.subscribeToAnnouncements((liveAnnouncements) => {
+      setAnnouncements(liveAnnouncements);
+    });
+
+    return () => {
+      unsubStudents();
+      unsubAnnouncements();
+    };
   }, []);
+
+  // 3. Live real-time Firestore subscription to currently authenticated student's profile
+  useEffect(() => {
+    if (currentUser?.role === 'STUDENT' && currentUser.normalizedRegisterNumber) {
+      const unsubStudent = storageService.subscribeToStudent(currentUser.normalizedRegisterNumber, (liveProfile) => {
+        if (liveProfile) {
+          setCurrentStudent(liveProfile);
+          const newAvatar = liveProfile.profileImage || undefined;
+          setCurrentUser(prev => prev ? { ...prev, avatarUrl: newAvatar } : null);
+        }
+      });
+      return () => unsubStudent();
+    }
+  }, [currentUser?.role, currentUser?.normalizedRegisterNumber]);
 
   const loadAppInitialState = async () => {
     setIsLoading(true);
@@ -313,8 +342,9 @@ export const App: React.FC = () => {
                   onTabChange={setSidebarTab}
                   onProfileUpdated={updated => {
                     setCurrentStudent(updated);
-                    if (updated.profileImage && currentUser) {
-                      const updatedUser = { ...currentUser, avatarUrl: updated.profileImage };
+                    const newAvatar = updated.profileImage || undefined;
+                    if (currentUser) {
+                      const updatedUser = { ...currentUser, avatarUrl: newAvatar };
                       setCurrentUser(updatedUser);
                       localStorage.setItem('civil_connect_auth_session', JSON.stringify(updatedUser));
                     }

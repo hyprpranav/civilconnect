@@ -93,9 +93,12 @@ class CloudinaryService {
         }
 
         const data = await response.json();
+        const baseSecureUrl = data.secure_url;
+        // Append cache-busting timestamp version to ensure all browsers immediately display the new photograph
+        const cacheBustedUrl = `${baseSecureUrl}${baseSecureUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
         return {
           success: true,
-          imageUrl: data.secure_url,
+          imageUrl: cacheBustedUrl,
           publicId: data.public_id,
           message: 'Profile image uploaded to Cloudinary successfully'
         };

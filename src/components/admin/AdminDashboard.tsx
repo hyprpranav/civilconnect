@@ -179,6 +179,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     loadAuxiliaryData();
     loadPendingAccountRequests();
+
+    // Real-time Firestore subscription to Audit Logs & Teams
+    const unsubLogs = storageService.subscribeToAuditLogs((liveLogs) => {
+      setAuditLogs(liveLogs);
+    });
+
+    const unsubTeams = storageService.subscribeToTeams((liveTeams) => {
+      setTeams(liveTeams);
+    });
+
+    return () => {
+      unsubLogs();
+      unsubTeams();
+    };
   }, []);
 
   const loadPendingAccountRequests = async () => {

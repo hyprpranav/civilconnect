@@ -27,7 +27,8 @@ import {
   getDoc, 
   setDoc, 
   deleteDoc, 
-  writeBatch 
+  writeBatch,
+  onSnapshot 
 } from 'firebase/firestore';
 import { getFirestoreDb } from './firebaseConfig';
 
@@ -209,7 +210,7 @@ class StorageService {
 
     const inputDigits = key.replace(/\D/g, '');
 
-    return students.find(s => {
+    const found = students.find(s => {
       // 1. Direct register number match (case-insensitive)
       if (
         s.id === key || 
@@ -259,7 +260,25 @@ class StorageService {
       }
 
       return false;
-    }) || null;
+    });
+
+    if (found) return found;
+
+    // Direct Firestore doc lookup fallback for newly created students or cold starts
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        const docRef = doc(db, 'students', key);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          return snap.data() as StudentProfile;
+        }
+      } catch (err) {
+        console.warn('[Firestore] Direct student lookup note:', err);
+      }
+    }
+
+    return null;
   }
 
   public async saveStudent(student: StudentProfile): Promise<StudentProfile> {
@@ -1478,6 +1497,122 @@ class StorageService {
     }
 
     return { success: true, message: 'Account request declined.' };
+  }
+
+  // =========================================================================
+  // REAL-TIME FIRESTORE SUBSCRIPTIONS (onSnapshot)
+  // Ensures instant cross-browser & multi-device sync without manual refreshes
+  // =========================================================================
+
+  public subscribeToStudents(
+    callback: (students: StudentProfile[]) => void, 
+    includeArchived = false
+  ): () => void {
+    const db = getFirestoreDb();
+    if (!db) {
+      this.getStudents(includeArchived).then(callback);
+      return () => {};
+    }
+
+    const unsub = onSnapshot(collection(db, 'students'), (snap) => {
+      if (!snap.empty) {
+        const liveStudents = snap.docs.map(d => d.data() as StudentProfile);
+        localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(liveStudents));
+        const filtered = includeArchived ? liveStudents : liveStudents.filter(s => !s.isArchived);
+        callback(filtered);
+      }
+    }, (error) => {
+      console.warn('[Firestore] Students onSnapshot note:', error);
+      this.getStudents(includeArchived).then(callback);
+    });
+
+    return unsub;
+  }
+
+  public subscribeToStudent(
+    studentId: string, 
+    callback: (student: StudentProfile | null) => void
+  ): () => void {
+    const db = getFirestoreDb();
+    const cleanId = studentId.toLowerCase().trim();
+    if (!db || !cleanId) {
+      this.getStudentById(cleanId).then(callback);
+      return () => {};
+    }
+
+    const unsub = onSnapshot(doc(db, 'students', cleanId), (snap) => {
+      if (snap.exists()) {
+        const liveStudent = snap.data() as StudentProfile;
+        callback(liveStudent);
+      } else {
+        callback(null);
+      }
+    }, (error) => {
+      console.warn('[Firestore] Single student onSnapshot note:', error);
+      this.getStudentById(cleanId).then(callback);
+    });
+
+    return unsub;
+  }
+
+  public subscribeToTeams(callback: (teams: TeamFormation[]) => void): () => void {
+    const db = getFirestoreDb();
+    if (!db) {
+      this.getTeams().then(callback);
+      return () => {};
+    }
+
+    const unsub = onSnapshot(collection(db, 'teams'), (snap) => {
+      const liveTeams = snap.docs.map(d => d.data() as TeamFormation);
+      localStorage.setItem(STORAGE_KEYS.TEAMS, JSON.stringify(liveTeams));
+      callback(liveTeams);
+    }, (error) => {
+      console.warn('[Firestore] Teams onSnapshot note:', error);
+      this.getTeams().then(callback);
+    });
+
+    return unsub;
+  }
+
+  public subscribeToAuditLogs(callback: (logs: AuditLogEntry[]) => void): () => void {
+    const db = getFirestoreDb();
+    if (!db) {
+      this.getAuditLogs().then(callback);
+      return () => {};
+    }
+
+    const unsub = onSnapshot(collection(db, 'auditLogs'), (snap) => {
+      if (!snap.empty) {
+        const liveLogs = snap.docs.map(d => d.data() as AuditLogEntry);
+        liveLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(liveLogs));
+        callback(liveLogs);
+      }
+    }, (error) => {
+      console.warn('[Firestore] AuditLogs onSnapshot note:', error);
+      this.getAuditLogs().then(callback);
+    });
+
+    return unsub;
+  }
+
+  public subscribeToAnnouncements(callback: (announcements: Announcement[]) => void): () => void {
+    const db = getFirestoreDb();
+    if (!db) {
+      this.getAnnouncements().then(callback);
+      return () => {};
+    }
+
+    const unsub = onSnapshot(collection(db, 'announcements'), (snap) => {
+      const live = snap.docs.map(d => d.data() as Announcement);
+      localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(live));
+      callback(live);
+    }, (error) => {
+      console.warn('[Firestore] Announcements onSnapshot note:', error);
+      this.getAnnouncements().then(callback);
+    });
+
+    return unsub;
   }
 }
 
