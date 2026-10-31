@@ -195,31 +195,36 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-      {currentView === 'landing' && (
-        <LandingPage
-          onOpenLogin={handleOpenLogin}
-        />
-      )}
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans relative">
+      {/* Slightly dull atmospheric background watermark across entire portal */}
+      <div className="portal-bg-watermark" aria-hidden="true" />
 
-      {currentView === 'login' && (
-        <LoginPage
-          onBackToLanding={() => setCurrentView('landing')}
-          onLoginSuccess={handleLoginSuccess}
-          initialMode={loginMode}
-        />
-      )}
+      {/* Foreground Interactive Layer */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {currentView === 'landing' && (
+          <LandingPage
+            onOpenLogin={handleOpenLogin}
+          />
+        )}
 
-      {currentView === 'dashboard' && currentUser && (() => {
-        const effectiveAvatar = 
-          currentStudent?.profileImage || 
-          currentUser.avatarUrl || 
-          storageService.getSavedAvatar(currentUser.email) ||
-          storageService.getSavedAvatar(currentUser.registerNumber) ||
-          undefined;
+        {currentView === 'login' && (
+          <LoginPage
+            onBackToLanding={() => setCurrentView('landing')}
+            onLoginSuccess={handleLoginSuccess}
+            initialMode={loginMode}
+          />
+        )}
 
-        return (
-          <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50">
+        {currentView === 'dashboard' && currentUser && (() => {
+          const effectiveAvatar = 
+            currentStudent?.profileImage || 
+            currentUser.avatarUrl || 
+            storageService.getSavedAvatar(currentUser.email) ||
+            storageService.getSavedAvatar(currentUser.registerNumber) ||
+            undefined;
+
+          return (
+            <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50/75 backdrop-blur-2xs">
             {/* Left Navigation Sidebar (Desktop rail + Mobile off-canvas drawer) */}
             <AppSidebar
               currentUser={currentUser}
@@ -347,6 +352,7 @@ export const App: React.FC = () => {
         </div>
         );
       })()}
+      </div>
 
       {/* Password Change Modal */}
       {currentUser && (
