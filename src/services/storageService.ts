@@ -447,6 +447,76 @@ class StorageService {
     return true;
   }
 
+  /**
+   * Reset filled questionnaire answers, skills, and interview evaluations for a student.
+   * Keeps core collegiate registration data (Name, RegNo, Email, Phone, Dept, Year, Club) intact.
+   */
+  public async resetStudentFilledData(
+    studentIdentifier: string,
+    performer: { uid: string; name: string; role: any; email?: string }
+  ): Promise<{ success: boolean; message: string; updatedStudent?: StudentProfile }> {
+    const student = await this.getStudentById(studentIdentifier);
+    if (!student) {
+      return { success: false, message: 'Student record not found.' };
+    }
+
+    const normKey = student.normalizedRegisterNumber || student.registerNumber.toLowerCase().trim();
+
+    // Reset filled profile fields and interview evaluation, but KEEP basic registration
+    const resetStudent: StudentProfile = {
+      ...student,
+      id: normKey,
+      normalizedRegisterNumber: normKey,
+      profileCompletionPercentage: 0,
+      profileStatus: 'draft',
+      shortBio: '',
+      personalInterests: [],
+      skills: undefined,
+      interests: undefined,
+      teamStrengths: undefined,
+      teamPreferences: undefined,
+      interviewEvaluation: undefined,
+      submittedAt: undefined,
+      updatedAt: new Date().toISOString()
+    };
+
+    // Save locally
+    const students = await this.getStudents(true);
+    const idx = students.findIndex(s => s.id === normKey || s.normalizedRegisterNumber === normKey);
+    if (idx >= 0) {
+      students[idx] = resetStudent;
+      localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+    }
+
+    // Save to Firestore
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'students', normKey), sanitizeForFirestore(resetStudent));
+      } catch (err) {
+        console.warn('[Firestore] Reset student cloud save note:', err);
+      }
+    }
+
+    // Write audit log
+    await this.addAuditLog({
+      performedBy: performer.uid,
+      performerName: performer.name,
+      role: performer.role,
+      action: `Student Profile & Evaluation Data Reset: ${student.name} (${student.registerNumber})`,
+      affectedCollection: 'students',
+      affectedRecordIds: [normKey],
+      operationStatus: 'success',
+      details: `Filled student submission and interview evaluation removed by ${performer.name} (${performer.role}). Student returned to 0% draft status.`
+    });
+
+    return {
+      success: true,
+      message: `Successfully reset filled data and interview evaluation for ${student.name}.`,
+      updatedStudent: resetStudent
+    };
+  }
+
   public async bulkDeleteStudents(normalizedRegNos: string[], softDelete = true): Promise<{ count: number }> {
     const students = await this.getStudents(true);
     const set = new Set(normalizedRegNos.map(s => s.toLowerCase().trim()));

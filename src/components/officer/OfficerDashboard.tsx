@@ -21,6 +21,7 @@ import { AnnouncementsManagerView } from '../common/AnnouncementsManagerView';
 import { PasswordChangeModal } from '../common/PasswordChangeModal';
 import { InterviewEvaluationModal } from '../common/InterviewEvaluationModal';
 import { TeamsManagerView } from '../common/TeamsManagerView';
+import { ExportCenterView } from '../admin/ExportCenterView';
 import { 
   Users, 
   Search, 
@@ -51,7 +52,9 @@ import {
   Sparkles,
   Award,
   Layers,
-  Hash
+  Hash,
+  RotateCcw,
+  Download
 } from 'lucide-react';
 
 interface OfficerDashboardProps {
@@ -73,20 +76,20 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   onTabChange,
   onUserUpdated
 }) => {
-  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements' | 'teams'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements' | 'teams' | 'export'>('students');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   React.useEffect(() => {
     if (externalTab) {
       if (externalTab === 'dashboard') {
         setActiveTab('students');
-      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff', 'profile', 'announcements', 'teams'].includes(externalTab)) {
+      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff', 'profile', 'announcements', 'teams', 'export'].includes(externalTab)) {
         setActiveTab(externalTab as any);
       }
     }
   }, [externalTab]);
 
-  const handleTabChange = (tab: 'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements' | 'teams') => {
+  const handleTabChange = (tab: 'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements' | 'teams' | 'export') => {
     setActiveTab(tab);
     onTabChange?.(tab);
   };
@@ -96,6 +99,8 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState<string>('All');
   const [yearFilter, setYearFilter] = useState<string>('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
   // Selected student for detail modal
   const [viewingStudent, setViewingStudent] = useState<StudentProfile | null>(null);
@@ -257,6 +262,29 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
     const matchesYear = yearFilter === 'All' || s.academicYear === yearFilter;
     return matchesSearch && matchesDept && matchesYear;
   });
+
+  const totalPages = Math.ceil(filteredStudents.length / pageSize) || 1;
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const handleResetStudentData = async (student: StudentProfile) => {
+    if (!window.confirm(`Are you sure you want to reset filled answers and interview evaluation for ${student.name} (${student.registerNumber})?\n\nThis will remove skills, interests, questionnaire responses, and interview marks back to 0% draft so the student can refill fresh data.\n\nNote: Basic collegiate registration details (Name, Register Number, Department, Year, Email, Phone, Club, Confirmation ID) will be preserved.`)) {
+      return;
+    }
+    try {
+      const res = await storageService.resetStudentFilledData(student.id, user);
+      if (res.success) {
+        alert(res.message);
+        if (viewingStudent?.id === student.id && res.updatedStudent) {
+          setViewingStudent(res.updatedStudent);
+        }
+        await onRefreshData();
+      } else {
+        alert(res.message);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to reset student data.');
+    }
+  };
 
   // Calculate Officer Overview Metrics
   const totalAssigned = students.length;
@@ -457,6 +485,18 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
               </span>
             )}
           </button>
+
+          <button
+            onClick={() => handleTabChange('export')}
+            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-xl transition-colors cursor-pointer ${
+              activeTab === 'export'
+                ? 'bg-blue-950 text-white'
+                : 'text-blue-950 bg-blue-50 hover:bg-blue-100 border border-blue-200'
+            }`}
+          >
+            <Download className="w-4 h-4 text-blue-700" />
+            <span>Export Center</span>
+          </button>
         </div>
       </div>
 
@@ -525,7 +565,10 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
               <input
                 type="text"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={e => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
                 placeholder="Search by student name, register number or email..."
                 className="w-full pl-10 pr-3 py-2.5 text-xs sm:text-sm font-medium border border-slate-300 rounded-xl"
               />
@@ -534,7 +577,10 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
             <div className="flex flex-wrap gap-2">
               <select
                 value={deptFilter}
-                onChange={e => setDeptFilter(e.target.value)}
+                onChange={e => {
+                  setDeptFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="px-3 py-2 text-xs sm:text-sm font-semibold border border-slate-300 rounded-xl bg-white shadow-2xs max-w-full sm:max-w-[280px]"
               >
                 <option value="All">All Departments ({students.length})</option>
@@ -545,7 +591,10 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
 
               <select
                 value={yearFilter}
-                onChange={e => setYearFilter(e.target.value)}
+                onChange={e => {
+                  setYearFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="px-3 py-2 text-xs sm:text-sm font-semibold border border-slate-300 rounded-xl bg-white shadow-2xs"
               >
                 <option value="All">All Years</option>
@@ -579,7 +628,7 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredStudents.slice(0, 30).map(s => {
+                  paginatedStudents.map(s => {
                     const assignedTeam = teams.find(t =>
                       t.members.some(m => {
                         const mId = (m.studentId || '').toLowerCase().trim();
@@ -701,6 +750,14 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
                             <Edit2 className="w-3.5 h-3.5 text-blue-800" />
                             <span>Edit</span>
                           </button>
+                          <button
+                            onClick={() => handleResetStudentData(s)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl transition-colors cursor-pointer"
+                            title="Reset questionnaire responses and interview evaluation back to 0% draft"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Reset</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -711,9 +768,27 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
             </table>
           </div>
 
+          {/* Pagination Controls */}
           <div className="flex items-center justify-between text-xs text-slate-500 pt-2 font-medium">
-            <span>Showing top {Math.min(30, filteredStudents.length)} of {filteredStudents.length} filtered students</span>
-            <span>Total enrolled records: {students.length}</span>
+            <span>
+              Showing {paginatedStudents.length} of {filteredStudents.length} records (Page {currentPage} of {totalPages})
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1064,11 +1139,21 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
         />
       )}
 
+      {/* TAB: EXPORT CENTER (Officer View) */}
+      {activeTab === 'export' && (
+        <ExportCenterView
+          students={students}
+          teams={teams}
+          announcements={announcements}
+        />
+      )}
+
       {/* ENHANCED STUDENT VIEW & VERIFY MODAL */}
       {/* Official Student Dossier • AIR Profile Card Modal (Identical to Admin Dashboard) */}
       <AirProfileCardModal
         student={viewingStudent}
         teams={teams}
+        currentUser={user}
         onClose={() => setViewingStudent(null)}
         onEdit={s => {
           setViewingStudent(null);

@@ -343,6 +343,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const handleResetStudentData = async (student: StudentProfile) => {
+    if (!window.confirm(`Are you sure you want to reset filled answers and interview evaluation for ${student.name} (${student.registerNumber})?\n\nThis will remove skills, interests, submitted questionnaire status, and interview scores back to 0% draft so the student can refill fresh data.\n\nNote: Basic collegiate registration details (Name, Register Number, Department, Year, Email, Phone, Club, Confirmation ID) will be preserved.`)) {
+      return;
+    }
+    try {
+      const res = await storageService.resetStudentFilledData(student.id, user);
+      if (res.success) {
+        alert(res.message);
+        if (selectedStudent?.id === student.id && res.updatedStudent) {
+          setSelectedStudent(res.updatedStudent);
+        }
+        await onRefreshData();
+      } else {
+        alert(res.message);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to reset student data.');
+    }
+  };
+
   const handleTriggerBulkDelete = () => {
     if (selectedRegNos.length === 0) return;
 
@@ -1015,6 +1035,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
+                          onClick={() => handleResetStudentData(student)}
+                          className="p-1 text-amber-600 hover:text-amber-800"
+                          title="Reset Questionnaire & Interview Evaluation back to 0% draft"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => handleTriggerSingleDelete(student)}
                           className="p-1 text-red-500 hover:text-red-700"
                           title="Delete with 6-Digit PIN"
@@ -1499,6 +1526,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <AirProfileCardModal
         student={selectedStudent}
         teams={teams}
+        currentUser={user}
         onClose={() => setSelectedStudent(null)}
         onEdit={s => {
           setSelectedStudent(null);

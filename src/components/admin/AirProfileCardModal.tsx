@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { StudentProfile, TeamFormation } from '../../types';
+import { StudentProfile, TeamFormation, UserAccount } from '../../types';
 import { storageService } from '../../services/storageService';
 import { cloudinaryService } from '../../services/cloudinaryService';
 import { TeamDetailsModal } from '../common/TeamDetailsModal';
@@ -36,7 +36,8 @@ import {
   ChevronUp,
   Clock,
   Lock,
-  EyeOff
+  EyeOff,
+  RotateCcw
 } from 'lucide-react';
 
 interface AirProfileCardModalProps {
@@ -46,8 +47,10 @@ interface AirProfileCardModalProps {
   onInterview?: (student: StudentProfile) => void;
   onStudentUpdated?: (updated: StudentProfile) => void;
   onVerifyStudent?: (student: StudentProfile) => void;
+  onResetData?: (student: StudentProfile) => void;
   canEditPhoto?: boolean;
   teams?: TeamFormation[];
+  currentUser?: UserAccount;
 }
 
 export const AirProfileCardModal: React.FC<AirProfileCardModalProps> = ({
@@ -57,14 +60,55 @@ export const AirProfileCardModal: React.FC<AirProfileCardModalProps> = ({
   onInterview,
   onStudentUpdated,
   onVerifyStudent,
+  onResetData,
   canEditPhoto = true,
-  teams = []
+  teams = [],
+  currentUser
 }) => {
   const [copied, setCopied] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [photoToast, setPhotoToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedTeamForModal, setSelectedTeamForModal] = useState<TeamFormation | null>(null);
   const [isScorecardExpanded, setIsScorecardExpanded] = useState(false);
+
+  const handleResetData = async () => {
+    if (!student) return;
+    const confirmMsg = `Are you sure you want to reset filled form data and interview evaluation for ${student.name} (${student.registerNumber})?\n\nThis will remove skills, interests, questionnaire responses, and interview evaluation marks back to 0% draft so the student can refill fresh data.\n\nNote: Basic collegiate registration (Name, Register Number, Department, Year, Email, Phone, Club, Confirmation ID) will remain intact.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setIsResetting(true);
+      let performer: { uid: string; name: string; role: any; email?: string } | undefined = currentUser;
+      if (!performer) {
+        try {
+          const raw = localStorage.getItem('civil_connect_auth_session');
+          if (raw) performer = JSON.parse(raw);
+        } catch {}
+      }
+      if (!performer) {
+        performer = {
+          uid: 'sys-admin',
+          name: 'Staff / Admin',
+          email: 'admin@psgitech.ac.in',
+          role: 'ADMIN'
+        };
+      }
+
+      const res = await storageService.resetStudentFilledData(student.id, performer);
+      if (res.success && res.updatedStudent) {
+        alert(res.message);
+        onStudentUpdated?.(res.updatedStudent);
+        onResetData?.(res.updatedStudent);
+      } else {
+        alert(res.message || 'Failed to reset student data.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error occurred while resetting student data.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const assignedTeam = useMemo(() => {
     if (!student || !teams || teams.length === 0) return null;
@@ -830,6 +874,16 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
                 Edit Record
               </button>
             )}
+            <button
+              type="button"
+              onClick={handleResetData}
+              disabled={isResetting}
+              className="px-3.5 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              title="Reset student questionnaire answers and interview marks back to 0% draft"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 text-amber-700 ${isResetting ? 'animate-spin' : ''}`} />
+              <span>{isResetting ? 'Resetting...' : 'Reset Filled Data'}</span>
+            </button>
             <button
               type="button"
               onClick={onClose}
