@@ -18,7 +18,7 @@ export const INITIAL_STAFF_ACCOUNTS: UserAccount[] = [
     name: 'Harish Pranav S (Dev)',
     department: 'Civil Engineering',
     academicYear: '4th Year',
-    avatarUrl: '/harish_pranav_profile.jpg'
+    avatarUrl: undefined
   }
 ];
 

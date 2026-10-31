@@ -30,6 +30,7 @@ export const App: React.FC = () => {
   const [supportTicketModalOpen, setSupportTicketModalOpen] = useState(false);
   const [openTicketsCount, setOpenTicketsCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [staffCount, setStaffCount] = useState<number>(1);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -40,15 +41,17 @@ export const App: React.FC = () => {
   const loadAppInitialState = async () => {
     setIsLoading(true);
     try {
-      const [allStudents, allAnnouncements, allTickets, allPendingAccs, allOfficerReqs] = await Promise.all([
+      const [allStudents, allAnnouncements, allTickets, allPendingAccs, allOfficerReqs, allStaff] = await Promise.all([
         storageService.getStudents(),
         storageService.getAnnouncements(),
         storageService.getSupportTickets(),
         storageService.getPendingAccountRequests(),
-        storageService.getRequests()
+        storageService.getRequests(),
+        storageService.getStaffAccounts()
       ]);
       setStudents(allStudents);
       setAnnouncements(allAnnouncements);
+      setStaffCount(allStaff.length);
       setOpenTicketsCount(allTickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length);
       setPendingRequestsCount(
         allPendingAccs.filter(r => r.status === 'pending').length +
@@ -57,16 +60,25 @@ export const App: React.FC = () => {
 
       const activeSession = authService.getCurrentUser();
       if (activeSession) {
+        // Restore persistent user avatar (logo/photo)
+        const savedAvatar = storageService.getSavedAvatar(activeSession.email) || storageService.getSavedAvatar(activeSession.registerNumber);
+        if (savedAvatar) {
+          activeSession.avatarUrl = savedAvatar;
+        } else if (activeSession.avatarUrl === '/harish_pranav_profile.jpg') {
+          activeSession.avatarUrl = undefined;
+        }
+
         if (activeSession.role === 'STUDENT') {
           const profile = await storageService.getStudentById(activeSession.normalizedRegisterNumber);
           setCurrentStudent(profile);
-          if (profile?.profileImage) {
+          if (profile?.profileImage && profile.profileImage !== '/harish_pranav_profile.jpg') {
             activeSession.avatarUrl = profile.profileImage;
-          } else if (activeSession.email.includes('92762bec066') || activeSession.name.toLowerCase().includes('harish pranav')) {
-            activeSession.avatarUrl = '/harish_pranav_profile.jpg';
           }
-        } else if (!activeSession.avatarUrl && (activeSession.email.includes('hyprpranav') || activeSession.name.toLowerCase().includes('harish pranav'))) {
-          activeSession.avatarUrl = '/harish_pranav_profile.jpg';
+        } else {
+          const matched = allStaff.find(s => s.uid === activeSession.uid || s.normalizedEmail === activeSession.normalizedEmail);
+          if (matched?.avatarUrl && matched.avatarUrl !== '/harish_pranav_profile.jpg') {
+            activeSession.avatarUrl = matched.avatarUrl;
+          }
         }
         setCurrentUser(activeSession);
         setCurrentView('dashboard');
@@ -81,26 +93,35 @@ export const App: React.FC = () => {
   };
 
   const refreshData = async () => {
-    const [allStudents, allAnnouncements, allTickets, allPendingAccs, allOfficerReqs] = await Promise.all([
+    const [allStudents, allAnnouncements, allTickets, allPendingAccs, allOfficerReqs, allStaff] = await Promise.all([
       storageService.getStudents(),
       storageService.getAnnouncements(),
       storageService.getSupportTickets(),
       storageService.getPendingAccountRequests(),
-      storageService.getRequests()
+      storageService.getRequests(),
+      storageService.getStaffAccounts()
     ]);
     setStudents(allStudents);
     setAnnouncements(allAnnouncements);
+    setStaffCount(allStaff.length);
     setOpenTicketsCount(allTickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length);
     setPendingRequestsCount(
       allPendingAccs.filter(r => r.status === 'pending').length +
       allOfficerReqs.filter(r => r.status === 'Pending').length
     );
 
-    if (currentUser && currentUser.role === 'STUDENT') {
-      const profile = await storageService.getStudentById(currentUser.normalizedRegisterNumber);
-      setCurrentStudent(profile);
-      if (profile?.profileImage) {
-        setCurrentUser(prev => prev ? { ...prev, avatarUrl: profile.profileImage } : null);
+    if (currentUser) {
+      if (currentUser.role === 'STUDENT') {
+        const profile = await storageService.getStudentById(currentUser.normalizedRegisterNumber);
+        setCurrentStudent(profile);
+        if (profile?.profileImage) {
+          setCurrentUser(prev => prev ? { ...prev, avatarUrl: profile.profileImage } : null);
+        }
+      } else {
+        const matched = allStaff.find(s => s.uid === currentUser.uid || s.normalizedEmail === currentUser.normalizedEmail);
+        if (matched?.avatarUrl) {
+          setCurrentUser(prev => prev ? { ...prev, avatarUrl: matched.avatarUrl } : null);
+        }
       }
     }
   };
@@ -111,16 +132,20 @@ export const App: React.FC = () => {
   };
 
   const handleLoginSuccess = async (user: UserAccount, requirePasswordChange: boolean) => {
+    // Restore persistent user avatar if available
+    const savedAvatar = storageService.getSavedAvatar(user.email) || storageService.getSavedAvatar(user.registerNumber);
+    if (savedAvatar) {
+      user.avatarUrl = savedAvatar;
+    } else if (user.avatarUrl === '/harish_pranav_profile.jpg') {
+      user.avatarUrl = undefined;
+    }
+
     if (user.role === 'STUDENT') {
       const profile = await storageService.getStudentById(user.normalizedRegisterNumber);
       setCurrentStudent(profile);
-      if (profile?.profileImage) {
+      if (profile?.profileImage && profile.profileImage !== '/harish_pranav_profile.jpg') {
         user.avatarUrl = profile.profileImage;
-      } else if (user.email.includes('92762bec066') || user.name.toLowerCase().includes('harish pranav')) {
-        user.avatarUrl = '/harish_pranav_profile.jpg';
       }
-    } else if (!user.avatarUrl && (user.email.includes('hyprpranav') || user.name.toLowerCase().includes('harish pranav'))) {
-      user.avatarUrl = '/harish_pranav_profile.jpg';
     }
     setCurrentUser(user);
     setSidebarTab('dashboard');
@@ -150,6 +175,7 @@ export const App: React.FC = () => {
       case 'export': return 'Export Center';
       case 'tickets': return 'Feedback & Issues Desk';
       case 'profile': return 'My Profile';
+      case 'staff': return 'Staff & Faculty Management';
       case 'requests': return 'Access Requests Center';
       case 'form': return 'Skills Assessment';
       default: return tab;
@@ -188,9 +214,9 @@ export const App: React.FC = () => {
         const effectiveAvatar = 
           currentStudent?.profileImage || 
           currentUser.avatarUrl || 
-          ((currentUser.email.includes('92762bec066') || currentUser.email.includes('hyprpranav') || currentUser.name.toLowerCase().includes('harish pranav')) 
-            ? '/harish_pranav_profile.jpg' 
-            : undefined);
+          storageService.getSavedAvatar(currentUser.email) ||
+          storageService.getSavedAvatar(currentUser.registerNumber) ||
+          undefined;
 
         return (
           <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50">
@@ -212,6 +238,7 @@ export const App: React.FC = () => {
               onOpenSupportTicket={() => setSupportTicketModalOpen(true)}
               pendingRequestsCount={pendingRequestsCount}
               openTicketsCount={openTicketsCount}
+              staffCount={staffCount}
               isMobileOpen={isMobileNavOpen}
               onCloseMobile={() => setIsMobileNavOpen(false)}
             />
@@ -309,6 +336,10 @@ export const App: React.FC = () => {
                   onTabChange={setSidebarTab}
                   onRefreshData={refreshData}
                   onOpenIntegrationGuide={() => setIntegrationModalOpen(true)}
+                  onUserUpdated={updated => {
+                    setCurrentUser(updated);
+                    refreshData();
+                  }}
                 />
               )}
             </main>

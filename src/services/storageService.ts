@@ -100,13 +100,19 @@ class StorageService {
         }
       }
       
-      // Ensure Harish Pranav default profile photo is populated
+      // Sync persistent user avatars and purge legacy placeholder paths
       if (Array.isArray(students)) {
         let changed = false;
         students.forEach(s => {
-          if ((s.email.toLowerCase().includes('92762bec066') || s.name.toLowerCase().includes('harish pranav')) && !s.profileImage) {
-            s.profileImage = '/harish_pranav_profile.jpg';
+          if (s.profileImage === '/harish_pranav_profile.jpg' || (s.profileImage && s.profileImage.includes('unsplash'))) {
+            s.profileImage = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber) || undefined;
             changed = true;
+          } else if (!s.profileImage) {
+            const saved = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber);
+            if (saved) {
+              s.profileImage = saved;
+              changed = true;
+            }
           }
         });
         if (changed) {
@@ -167,6 +173,12 @@ class StorageService {
     }
 
     localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+
+    if (updatedStudent.profileImage) {
+      this.saveUserAvatar(updatedStudent.email, updatedStudent.profileImage);
+      this.saveUserAvatar(updatedStudent.registerNumber, updatedStudent.profileImage);
+    }
+
     return updatedStudent;
   }
 
@@ -508,6 +520,33 @@ class StorageService {
     return true;
   }
 
+  // --- Dedicated User Avatar Registry (Persists logos/photos across logins & logouts) ---
+  public getSavedAvatar(identifier?: string): string | null {
+    if (!identifier) return null;
+    try {
+      const data = localStorage.getItem('civil_connect_user_avatars');
+      if (!data) return null;
+      const map = JSON.parse(data);
+      const key = identifier.toLowerCase().trim();
+      return map[key] || null;
+    } catch {
+      return null;
+    }
+  }
+
+  public saveUserAvatar(identifier: string, avatarUrl: string): void {
+    if (!identifier || !avatarUrl) return;
+    try {
+      const data = localStorage.getItem('civil_connect_user_avatars');
+      const map = data ? JSON.parse(data) : {};
+      const key = identifier.toLowerCase().trim();
+      map[key] = avatarUrl;
+      localStorage.setItem('civil_connect_user_avatars', JSON.stringify(map));
+    } catch (err) {
+      console.warn('Failed to save avatar', err);
+    }
+  }
+
   // --- Staff & Admin Management ---
   public async getStaffAccounts(): Promise<UserAccount[]> {
     try {
@@ -516,9 +555,15 @@ class StorageService {
       if (Array.isArray(staff)) {
         let changed = false;
         staff.forEach(s => {
-          if ((s.email.toLowerCase().includes('hyprpranav') || s.name.toLowerCase().includes('harish pranav')) && !s.avatarUrl) {
-            s.avatarUrl = '/harish_pranav_profile.jpg';
+          if (s.avatarUrl === '/harish_pranav_profile.jpg' || (s.avatarUrl && s.avatarUrl.includes('unsplash'))) {
+            s.avatarUrl = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber) || undefined;
             changed = true;
+          } else if (!s.avatarUrl) {
+            const saved = this.getSavedAvatar(s.email) || this.getSavedAvatar(s.registerNumber);
+            if (saved) {
+              s.avatarUrl = saved;
+              changed = true;
+            }
           }
         });
         if (changed) {
@@ -540,6 +585,12 @@ class StorageService {
       staff.push(account);
     }
     localStorage.setItem(STORAGE_KEYS.STAFF_ACCOUNTS, JSON.stringify(staff));
+
+    if (account.avatarUrl) {
+      this.saveUserAvatar(account.email, account.avatarUrl);
+      if (account.registerNumber) this.saveUserAvatar(account.registerNumber, account.avatarUrl);
+    }
+
     return account;
   }
 
@@ -693,6 +744,14 @@ class StorageService {
       return JSON.parse(data);
     } catch {
       return [];
+    }
+  }
+
+  public async savePendingAccountRequests(requests: PendingAccountRequest[]): Promise<void> {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ACCOUNT_REQUESTS, JSON.stringify(requests));
+    } catch (err) {
+      console.warn('Failed to save account requests', err);
     }
   }
 

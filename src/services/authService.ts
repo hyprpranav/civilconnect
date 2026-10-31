@@ -176,9 +176,12 @@ class AuthService {
       };
       this.saveStoredCredentials(creds);
 
-      // Guarantee Harish Pranav avatar
-      if (!matchedStaff.avatarUrl && (matchedStaff.email.includes('hyprpranav') || matchedStaff.name.toLowerCase().includes('harish pranav'))) {
-        matchedStaff.avatarUrl = '/harish_pranav_profile.jpg';
+      // Restore persistent user avatar if available
+      const savedAvatar = storageService.getSavedAvatar(matchedStaff.email) || storageService.getSavedAvatar(matchedStaff.registerNumber);
+      if (savedAvatar) {
+        matchedStaff.avatarUrl = savedAvatar;
+      } else if (matchedStaff.avatarUrl === '/harish_pranav_profile.jpg' || (matchedStaff.avatarUrl && matchedStaff.avatarUrl.includes('unsplash'))) {
+        matchedStaff.avatarUrl = undefined;
       }
 
       this.currentSession = matchedStaff;
@@ -277,9 +280,9 @@ class AuthService {
     };
     this.saveStoredCredentials(creds);
 
-    // Guarantee student profile image
-    const effectiveAvatar = matchedStudent.profileImage || 
-      (matchedStudent.email.includes('92762bec066') || matchedStudent.name.toLowerCase().includes('harish pranav') ? '/harish_pranav_profile.jpg' : undefined);
+    // Persistent student profile avatar
+    const savedStudentAvatar = storageService.getSavedAvatar(matchedStudent.email) || storageService.getSavedAvatar(matchedStudent.registerNumber);
+    const effectiveAvatar = savedStudentAvatar || (matchedStudent.profileImage === '/harish_pranav_profile.jpg' ? undefined : matchedStudent.profileImage);
 
     const userAccount: UserAccount = {
       uid: matchedStudent.id,
@@ -441,14 +444,17 @@ class AuthService {
       createdAt: new Date().toISOString(),
       name: 'Harish Pranav S (Dev)',
       department: 'Civil Engineering',
-      academicYear: '4th Year'
+      academicYear: '4th Year',
+      avatarUrl: storageService.getSavedAvatar('hyprpranav@gmail.com') || storageService.getSavedAvatar('hyprpranav') || undefined
     };
 
     // Ensure staff accounts has Harish Pranav
     const staffAccounts = await storageService.getStaffAccounts();
-    const exists = staffAccounts.some(s => s.normalizedEmail === 'hyprpranav@gmail.com');
-    if (!exists) {
+    const existing = staffAccounts.find(s => s.normalizedEmail === 'hyprpranav@gmail.com');
+    if (!existing) {
       await storageService.saveStaffAccount(harishAdmin);
+    } else if (existing.avatarUrl) {
+      harishAdmin.avatarUrl = existing.avatarUrl;
     }
 
     this.currentSession = harishAdmin;

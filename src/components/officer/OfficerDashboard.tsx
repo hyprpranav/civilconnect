@@ -11,6 +11,7 @@ import {
 } from '../../types';
 import { storageService } from '../../services/storageService';
 import { AdminAnalyticsView } from '../admin/AdminAnalyticsView';
+import { AdminStaffView } from '../admin/AdminStaffView';
 import { 
   Users, 
   Search, 
@@ -25,20 +26,20 @@ import {
   Eye, 
   Edit2, 
   Briefcase, 
-  Building2,
-  Calendar,
-  Lock,
-  ChevronLeft,
-  ChevronRight,
-  TrendingUp,
-  X,
-  BarChart3,
-  UserCheck,
-  UserPlus,
-  ShieldCheck,
-  Save,
-  GraduationCap,
-  Sparkles
+  Building2, 
+  Calendar, 
+  Lock, 
+  ChevronLeft, 
+  ChevronRight, 
+  TrendingUp, 
+  X, 
+  BarChart3, 
+  UserCheck, 
+  UserPlus, 
+  ShieldCheck, 
+  Save, 
+  GraduationCap, 
+  Sparkles 
 } from 'lucide-react';
 
 interface OfficerDashboardProps {
@@ -56,19 +57,19 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   externalTab,
   onTabChange
 }) => {
-  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff'>('students');
 
   React.useEffect(() => {
     if (externalTab) {
       if (externalTab === 'dashboard') {
         setActiveTab('students');
-      } else if (['students', 'analytics', 'requests', 'addStudent'].includes(externalTab)) {
+      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff'].includes(externalTab)) {
         setActiveTab(externalTab as any);
       }
     }
   }, [externalTab]);
 
-  const handleTabChange = (tab: 'students' | 'analytics' | 'requests' | 'addStudent') => {
+  const handleTabChange = (tab: 'students' | 'analytics' | 'requests' | 'addStudent' | 'staff') => {
     setActiveTab(tab);
     onTabChange?.(tab);
   };
@@ -918,6 +919,14 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
             </div>
           </form>
         </div>
+      )}
+
+      {/* TAB: STAFF DIRECTORY */}
+      {activeTab === 'staff' && (
+        <AdminStaffView
+          currentUser={user}
+          onRefreshData={onRefreshData}
+        />
       )}
 
       {/* ENHANCED STUDENT VIEW & VERIFY MODAL */}

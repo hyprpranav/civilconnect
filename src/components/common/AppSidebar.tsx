@@ -14,6 +14,7 @@ import {
   Building2,
   KeyRound,
   LifeBuoy,
+  ShieldCheck,
   X
 } from 'lucide-react';
 
@@ -28,6 +29,7 @@ interface AppSidebarProps {
   onOpenSupportTicket?: () => void;
   pendingRequestsCount?: number;
   openTicketsCount?: number;
+  staffCount?: number;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
@@ -43,6 +45,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onOpenSupportTicket,
   pendingRequestsCount = 0,
   openTicketsCount = 0,
+  staffCount,
   isMobileOpen = false,
   onCloseMobile
 }) => {
@@ -120,6 +123,25 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               >
                 <Users className={`w-4 h-4 ${activeTab === 'students' ? 'text-blue-600' : 'text-slate-400'}`} />
                 <span>Students</span>
+              </button>
+
+              <button
+                onClick={() => handleTabClick('staff')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'staff'
+                    ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <ShieldCheck className={`w-4 h-4 ${activeTab === 'staff' ? 'text-blue-600' : 'text-slate-400'}`} />
+                  <span>Staff</span>
+                </span>
+                {staffCount !== undefined && staffCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] bg-purple-100 text-purple-800 rounded-full font-bold">
+                    {staffCount}
+                  </span>
+                )}
               </button>
 
               <button
@@ -215,6 +237,25 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               >
                 <Users className={`w-4 h-4 ${activeTab === 'students' || activeTab === 'addStudent' ? 'text-blue-600' : 'text-slate-400'}`} />
                 <span>Student Roster</span>
+              </button>
+
+              <button
+                onClick={() => handleTabClick('staff')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'staff'
+                    ? 'bg-blue-50 text-blue-700 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <ShieldCheck className={`w-4 h-4 ${activeTab === 'staff' ? 'text-blue-600' : 'text-slate-400'}`} />
+                  <span>Staff Directory</span>
+                </span>
+                {staffCount !== undefined && staffCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] bg-purple-100 text-purple-800 rounded-full font-bold">
+                    {staffCount}
+                  </span>
+                )}
               </button>
 
               <button
@@ -366,9 +407,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               userProfileImage || 
               currentUser.avatarUrl || 
               (currentUser as any).profileImage || 
-              (currentUser.email.includes('92762bec066') || currentUser.email.includes('hyprpranav') || currentUser.name.toLowerCase().includes('harish pranav') 
-                ? '/harish_pranav_profile.jpg' 
-                : undefined);
+              undefined;
 
             return (
               <div className="w-10 h-10 rounded-full bg-blue-100 border-2 border-blue-300 text-blue-900 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden shadow-xs">

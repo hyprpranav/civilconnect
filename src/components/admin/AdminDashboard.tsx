@@ -20,6 +20,7 @@ import { AirProfileCardModal } from './AirProfileCardModal';
 import { ExportCenterView } from './ExportCenterView';
 import { AdminProfileView } from './AdminProfileView';
 import { AdminFeedbackView } from './AdminFeedbackView';
+import { AdminStaffView } from './AdminStaffView';
 import { 
   Users, 
   Search, 
@@ -65,6 +66,7 @@ interface AdminDashboardProps {
   onOpenIntegrationGuide: () => void;
   externalTab?: string;
   onTabChange?: (tab: string) => void;
+  onUserUpdated?: (updated: UserAccount) => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -74,10 +76,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onRefreshData,
   onOpenIntegrationGuide,
   externalTab,
-  onTabChange
+  onTabChange,
+  onUserUpdated
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'analytics' | 'students' | 'addStudent' | 'bulkImport' | 'requests' | 'teams' | 'announcements' | 'audit' | 'archive' | 'settings' | 'export' | 'profile' | 'tickets'
+    'overview' | 'analytics' | 'students' | 'addStudent' | 'bulkImport' | 'requests' | 'teams' | 'announcements' | 'audit' | 'archive' | 'settings' | 'export' | 'profile' | 'tickets' | 'staff'
   >('overview');
 
   useEffect(() => {
@@ -86,6 +89,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       else if (externalTab === 'manage-students') setActiveTab('bulkImport');
       else if (externalTab === 'builder') setActiveTab('teams');
       else if (externalTab === 'tickets') setActiveTab('tickets');
+      else if (externalTab === 'staff') setActiveTab('staff');
       else setActiveTab(externalTab as any);
     }
   }, [externalTab]);
@@ -546,13 +550,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* Card 2: Staff Members */}
-        <div className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-2.5 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+        <div 
+          onClick={() => handleTabChange('staff')}
+          className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-2.5 sm:gap-4 cursor-pointer hover:border-purple-300 hover:shadow-md transition-all group"
+        >
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
             <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0">
             <p className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">{staffAccounts.length || 1}</p>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Staff Members</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate group-hover:text-purple-600 transition-colors">Staff Members</p>
           </div>
         </div>
 
@@ -1546,11 +1553,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         />
       )}
 
+      {/* TAB: STAFF MANAGEMENT */}
+      {activeTab === 'staff' && (
+        <AdminStaffView
+          currentUser={user}
+          onRefreshData={onRefreshData}
+        />
+      )}
+
       {/* TAB: MY PROFILE (Screenshot 2) */}
       {activeTab === 'profile' && (
         <AdminProfileView
           user={user}
           onBackToDashboard={() => setActiveTab('overview')}
+          onUserUpdated={onUserUpdated}
         />
       )}
 

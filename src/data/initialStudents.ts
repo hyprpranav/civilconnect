@@ -1814,7 +1814,6 @@ export const INITIAL_STUDENTS: StudentProfile[] = [
     "registrationDate": "12/10/2026, 20:45:53",
     "profileCompletionPercentage": 0,
     "profileStatus": "draft",
-    "profileImage": "/harish_pranav_profile.jpg",
     "shortBio": "",
     "personalInterests": [],
     "updatedAt": "2026-10-30T18:15:30.281Z",

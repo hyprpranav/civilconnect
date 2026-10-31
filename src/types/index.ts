@@ -50,6 +50,7 @@ export interface UserAccount {
   department: Department;
   academicYear: AcademicYear;
   avatarUrl?: string;
+  phone?: string;
 }
 
 export interface StudentCSVRecord {
