@@ -107,6 +107,7 @@ export const InterviewEvaluationModal: React.FC<InterviewEvaluationModalProps> =
   onSave
 }) => {
   const isAdmin = currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN';
+  const canPublish = currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'OFFICER';
 
   // State for marks
   const [marksState, setMarksState] = useState<Record<string, number>>({});
@@ -204,8 +205,8 @@ export const InterviewEvaluationModal: React.FC<InterviewEvaluationModalProps> =
         strengths,
         areasForImprovement,
         recommendedRole,
-        // Publish state: ONLY admin can change publish state, or keep existing if staff
-        isPublishedToStudent: isAdmin ? isPublished : (student.interviewEvaluation?.isPublishedToStudent || false),
+        // Publish state: Admin and staff can toggle publish state
+        isPublishedToStudent: canPublish ? isPublished : (student.interviewEvaluation?.isPublishedToStudent || false),
         publishedAt: isPublished ? (student.interviewEvaluation?.publishedAt || now) : undefined,
         publishedBy: isPublished ? (student.interviewEvaluation?.publishedBy || currentUser.name) : undefined
       };
@@ -338,12 +339,12 @@ export const InterviewEvaluationModal: React.FC<InterviewEvaluationModalProps> =
                 </div>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   By default, interview marks are confidential and only visible within staff and admin consoles. 
-                  {isAdmin ? ' As Administrator, you can enable the button below to display this scorecard on the student\'s dashboard.' : ' Only Admin can publish these marks to the student dashboard.'}
+                  As a staff member or administrator, you can toggle the button to publish or hide this scorecard on the student's dashboard.
                 </p>
               </div>
 
-              {/* ADMIN-ONLY ONE-CLICK TOGGLE BUTTON */}
-              {isAdmin ? (
+              {/* STAFF & ADMIN ONE-CLICK TOGGLE BUTTON */}
+              {canPublish ? (
                 <button
                   type="button"
                   onClick={() => setIsPublished(!isPublished)}
@@ -368,7 +369,7 @@ export const InterviewEvaluationModal: React.FC<InterviewEvaluationModalProps> =
                 </button>
               ) : (
                 <div className="text-[11px] text-slate-400 italic bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-                  {student.interviewEvaluation?.isPublishedToStudent ? '✅ Published by Admin' : '🔒 Admin permission required to publish'}
+                  {student.interviewEvaluation?.isPublishedToStudent ? '✅ Published' : '🔒 Staff or Admin permission required'}
                 </div>
               )}
             </div>
