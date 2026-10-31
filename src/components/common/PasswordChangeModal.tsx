@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Key, CheckCircle, X, ShieldAlert } from 'lucide-react';
+import { Lock, Key, CheckCircle, X, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import { authService } from '../../services/authService';
 
 interface PasswordChangeModalProps {
@@ -20,6 +20,9 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,13 +33,13 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters long.');
+    if (newPassword.length < 4) {
+      setError('New password must contain at least 4 characters.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('New password and confirmation do not match.');
+      setError('New password and re-entered confirmation do not match.');
       return;
     }
 
@@ -58,6 +61,10 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
       setTimeout(() => {
         if (onSuccess) onSuccess();
         onClose();
+        setSuccess(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Failed to update password.');
@@ -82,14 +89,14 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
               <p className="text-xs text-blue-200">
                 {isMandatoryFirstLogin
                   ? 'Mandatory security protocol before proceeding'
-                  : 'Update credentials securely'}
+                  : 'Verify current password and set a new password'}
               </p>
             </div>
           </div>
           {!isMandatoryFirstLogin && (
             <button
               onClick={onClose}
-              className="text-blue-300 hover:text-white p-1 rounded-lg"
+              className="text-blue-300 hover:text-white p-1 rounded-lg cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -105,7 +112,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
               </div>
               <h4 className="text-base font-bold text-slate-900">Password Updated!</h4>
               <p className="text-xs text-slate-500">
-                Your new password has been securely registered. Redirecting to your dashboard...
+                Your new password has been verified and securely saved.
               </p>
             </div>
           ) : (
@@ -114,65 +121,86 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5">
                   <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-900 leading-relaxed">
-                    As a security policy for CIVIL CONNECT, initial onboarding passwords (<span className="font-mono font-semibold">civil</span>) must be changed upon first login.
+                    Initial onboarding password (<span className="font-mono font-semibold">civil</span>) must be changed upon first login.
                   </p>
                 </div>
               )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Current / Initial Password
+                  Current Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                     <Lock className="w-4 h-4" />
                   </div>
                   <input
-                    type="password"
+                    type={showCurrent ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={e => setCurrentPassword(e.target.value)}
-                    placeholder={isMandatoryFirstLogin ? 'e.g. civil' : 'Current password'}
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    placeholder="Enter current password (default: civil)"
+                    className="w-full pl-9 pr-10 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrent(!showCurrent)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showCurrent ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  New Password (min 6 characters)
+                  New Password (min 4 characters)
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                     <Key className="w-4 h-4" />
                   </div>
                   <input
-                    type="password"
+                    type={showNew ? 'text' : 'password'}
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
-                    placeholder="Enter strong new password"
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    placeholder="Enter new password"
+                    className="w-full pl-9 pr-10 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowNew(!showNew)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showNew ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Confirm New Password
+                  Re-enter New Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                     <Key className="w-4 h-4" />
                   </div>
                   <input
-                    type="password"
+                    type={showConfirm ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
-                    placeholder="Re-enter new password"
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    placeholder="Re-enter new password to verify"
+                    className="w-full pl-9 pr-10 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showConfirm ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
               </div>
 
@@ -187,7 +215,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -195,9 +223,9 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 disabled:opacity-50 rounded-lg shadow-sm transition-colors"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 disabled:opacity-50 rounded-lg shadow-sm transition-colors cursor-pointer"
                 >
-                  {isSubmitting ? 'Updating...' : 'Set New Password'}
+                  {isSubmitting ? 'Verifying & Updating...' : 'Update Password'}
                 </button>
               </div>
             </form>

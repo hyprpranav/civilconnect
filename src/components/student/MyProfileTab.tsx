@@ -18,10 +18,12 @@ import {
   Award,
   Globe,
   UploadCloud,
-  Trash2
+  Trash2,
+  KeyRound
 } from 'lucide-react';
 import { cloudinaryService } from '../../services/cloudinaryService';
 import { storageService } from '../../services/storageService';
+import { PasswordChangeModal } from '../common/PasswordChangeModal';
 
 interface MyProfileTabProps {
   student: StudentProfile;
@@ -46,6 +48,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoMessage, setPhotoMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -516,6 +519,31 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
             )}
           </div>
 
+          {/* Security & Password Management Card */}
+          <div className="bg-white rounded-2xl border-2 border-slate-200 p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-900 shrink-0">
+                <KeyRound className="w-5 h-5 text-blue-800" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-blue-950 font-serif">
+                  Account Password & Security
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Update your login password securely. Verification of your current password is required.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPasswordModal(true)}
+              className="px-4 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer flex items-center gap-2"
+            >
+              <KeyRound className="w-4 h-4 text-teal-300" />
+              <span>Change Password</span>
+            </button>
+          </div>
+
           {/* Verification Status Card */}
           <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-5 space-y-2.5 shadow-2xs">
             <div className="flex items-center gap-2 text-emerald-950 font-extrabold text-sm">
@@ -531,6 +559,13 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      <PasswordChangeModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        identifier={student.registerNumber}
+      />
     </div>
   );
 };

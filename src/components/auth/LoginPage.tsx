@@ -242,7 +242,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     type="text"
                     value={identifier}
                     onChange={e => setIdentifier(e.target.value)}
-                    placeholder="e.g. 927625BEE062 or any email (personal / official)"
+                    placeholder="Register No / College Email / Mobile Number"
                     className="w-full pl-9 pr-3 py-2.5 text-xs font-medium border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-800"
                     autoCapitalize="none"
                     autoCorrect="off"
@@ -250,7 +250,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   />
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Single login with register number or any email for Students, Officers, and Admins.
+                  Students can log in using Register Number (any case), College Email, or Mobile Number (Default password: <span className="font-mono font-bold text-blue-900">civil</span>).
                 </p>
               </div>
 

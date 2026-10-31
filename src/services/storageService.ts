@@ -154,13 +154,61 @@ class StorageService {
   public async getStudentById(identifier: string): Promise<StudentProfile | null> {
     const students = await this.getStudents(true);
     const key = identifier.toLowerCase().trim();
-    return students.find(s => 
-      s.id === key || 
-      s.normalizedRegisterNumber === key ||
-      s.registerNumber.toLowerCase().trim() === key ||
-      s.normalizedEmail === key ||
-      s.email.toLowerCase().trim() === key
-    ) || null;
+    if (!key) return null;
+
+    const inputDigits = key.replace(/\D/g, '');
+
+    return students.find(s => {
+      // 1. Direct register number match (case-insensitive)
+      if (
+        s.id === key || 
+        s.normalizedRegisterNumber === key ||
+        s.registerNumber.toLowerCase().trim() === key
+      ) {
+        return true;
+      }
+
+      // 2. Direct email match
+      if (
+        s.normalizedEmail === key ||
+        s.email.toLowerCase().trim() === key
+      ) {
+        return true;
+      }
+
+      // 3. Email prefix matching (e.g. input is 927624bec066 and email is 927624bec066@mkce.ac.in)
+      const studentPrefix = s.email.toLowerCase().split('@')[0].trim();
+      if (studentPrefix && studentPrefix === key) {
+        return true;
+      }
+
+      // 4. Input with or without @mkce.ac.in
+      if (key.includes('@')) {
+        const inputPrefix = key.split('@')[0].trim();
+        if (
+          s.normalizedRegisterNumber === inputPrefix ||
+          s.registerNumber.toLowerCase().trim() === inputPrefix ||
+          studentPrefix === inputPrefix
+        ) {
+          return true;
+        }
+      } else {
+        if (`${key}@mkce.ac.in` === s.email.toLowerCase().trim()) {
+          return true;
+        }
+      }
+
+      // 5. Phone / Mobile Number match (flexible digits check)
+      if (inputDigits.length >= 7 && s.phone) {
+        const studentPhoneDigits = s.phone.replace(/\D/g, '');
+        if (studentPhoneDigits === inputDigits) return true;
+        if (inputDigits.length >= 10 && studentPhoneDigits.length >= 10) {
+          if (inputDigits.slice(-10) === studentPhoneDigits.slice(-10)) return true;
+        }
+      }
+
+      return false;
+    }) || null;
   }
 
   public async saveStudent(student: StudentProfile): Promise<StudentProfile> {

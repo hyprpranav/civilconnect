@@ -16,7 +16,8 @@ import {
   User,
   ExternalLink,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  KeyRound
 } from 'lucide-react';
 import { cloudinaryService } from '../../services/cloudinaryService';
 import { storageService } from '../../services/storageService';
@@ -27,12 +28,14 @@ interface AdminProfileViewProps {
   user: UserAccount;
   onBackToDashboard: () => void;
   onUserUpdated?: (updated: UserAccount) => void;
+  onOpenChangePassword?: () => void;
 }
 
 export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
   user,
   onBackToDashboard,
-  onUserUpdated
+  onUserUpdated,
+  onOpenChangePassword
 }) => {
   const getInitialAvatar = () => {
     if (user.avatarUrl && !user.avatarUrl.includes('unsplash')) {
@@ -386,6 +389,23 @@ export const AdminProfileView: React.FC<AdminProfileViewProps> = ({
               <Cloud className="w-3.5 h-3.5 text-blue-600" />
               Cloudinary CDN & Local Storage Active
             </span>
+          </div>
+
+          <div className="py-2.5 flex items-center justify-between">
+            <div>
+              <span className="text-slate-500 block">Admin Password</span>
+              <span className="text-[10px] text-slate-400">Secure SHA-256 salted credentials</span>
+            </div>
+            {onOpenChangePassword && (
+              <button
+                type="button"
+                onClick={onOpenChangePassword}
+                className="px-3 py-1.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-teal-300" />
+                <span>Change Password</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

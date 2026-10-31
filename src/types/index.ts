@@ -193,7 +193,7 @@ export interface Announcement {
   id: string;
   title: string;
   description: string;
-  category: 'General' | 'Event' | 'Hackathon' | 'Competition' | 'Workshop' | 'Administrative';
+  category: 'General' | 'Event' | 'Hackathon' | 'Competition' | 'Workshop' | 'Administrative' | 'Quiz' | 'Congratulations' | 'Circular' | string;
   publishedBy: string;
   publisherRole: UserRole;
   publishedAt: string;

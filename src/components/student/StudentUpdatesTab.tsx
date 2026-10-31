@@ -19,13 +19,45 @@ export const StudentUpdatesTab: React.FC<StudentUpdatesTabProps> = ({ announceme
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
-  const categories = ['All', 'Hackathon', 'Workshop', 'Competition', 'Administrative', 'General'];
+  const categories = [
+    'All',
+    'Event',
+    'Quiz',
+    'Competition',
+    'Hackathon',
+    'Workshop',
+    'Congratulations',
+    'Circular',
+    'Administrative',
+    'General'
+  ];
+
+  const getCategoryBadgeClass = (cat: string) => {
+    switch (cat) {
+      case 'Quiz':
+        return 'bg-amber-100 text-amber-900 border-amber-300';
+      case 'Event':
+        return 'bg-rose-100 text-rose-900 border-rose-300';
+      case 'Congratulations':
+        return 'bg-emerald-100 text-emerald-900 border-emerald-300';
+      case 'Competition':
+      case 'Hackathon':
+        return 'bg-purple-100 text-purple-900 border-purple-300';
+      case 'Workshop':
+        return 'bg-teal-100 text-teal-900 border-teal-300';
+      case 'Circular':
+        return 'bg-sky-100 text-sky-900 border-sky-300';
+      default:
+        return 'bg-blue-100 text-blue-900 border-blue-200';
+    }
+  };
 
   const filtered = announcements.filter(ann => {
     const matchesCategory = selectedCategory === 'All' || ann.category === selectedCategory;
     const matchesSearch = 
       ann.title.toLowerCase().includes(search.toLowerCase()) ||
-      ann.description.toLowerCase().includes(search.toLowerCase());
+      ann.description.toLowerCase().includes(search.toLowerCase()) ||
+      ann.publishedBy.toLowerCase().includes(search.toLowerCase());
     return matchesCategory && matchesSearch && ann.isActive;
   });
 
@@ -40,7 +72,7 @@ export const StudentUpdatesTab: React.FC<StudentUpdatesTabProps> = ({ announceme
               College Notices, Competitions & Opportunities
             </h2>
             <p className="text-xs text-slate-500">
-              Stay informed with department announcements, technical workshops, and hackathon schedules.
+              Stay informed with department announcements, technical workshops, quizzes, and hackathon schedules.
             </p>
           </div>
 
@@ -61,7 +93,7 @@ export const StudentUpdatesTab: React.FC<StudentUpdatesTabProps> = ({ announceme
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search announcements by title or keywords..."
+              placeholder="Search announcements by title, publisher or keywords..."
               className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-800"
             />
           </div>
@@ -71,9 +103,9 @@ export const StudentUpdatesTab: React.FC<StudentUpdatesTabProps> = ({ announceme
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg shrink-0 transition-colors ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg shrink-0 transition-colors cursor-pointer ${
                   selectedCategory === cat
-                    ? 'bg-blue-900 text-white'
+                    ? 'bg-blue-900 text-white font-bold'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -103,12 +135,7 @@ export const StudentUpdatesTab: React.FC<StudentUpdatesTabProps> = ({ announceme
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  ann.category === 'Hackathon' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
-                  ann.category === 'Workshop' ? 'bg-teal-100 text-teal-800 border border-teal-200' :
-                  ann.category === 'Competition' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
-                  'bg-blue-100 text-blue-800 border border-blue-200'
-                }`}>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getCategoryBadgeClass(ann.category)}`}>
                   {ann.category}
                 </span>
 
@@ -129,6 +156,16 @@ export const StudentUpdatesTab: React.FC<StudentUpdatesTabProps> = ({ announceme
                 </p>
               </div>
 
+              {ann.attachmentUrl && (
+                <div className="rounded-xl overflow-hidden border border-slate-200 max-h-56 bg-slate-50">
+                  <img 
+                    src={ann.attachmentUrl} 
+                    alt={ann.title} 
+                    className="w-full h-full object-contain max-h-56" 
+                  />
+                </div>
+              )}
+
               {ann.attachmentUrl && ann.linkText && (
                 <div className="pt-2">
                   <a
@@ -143,13 +180,17 @@ export const StudentUpdatesTab: React.FC<StudentUpdatesTabProps> = ({ announceme
                 </div>
               )}
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-slate-400">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3 h-3 text-slate-400" />
-                  {new Date(ann.publishedAt).toLocaleDateString()}
+                  {new Date(ann.publishedAt).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
                 </span>
-                <span className="font-medium text-slate-500">
-                  {ann.publishedBy}
+                <span className="font-semibold text-slate-600 bg-slate-50 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                  Published by: {ann.publishedBy}
                 </span>
               </div>
             </div>

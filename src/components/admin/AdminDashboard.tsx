@@ -22,6 +22,8 @@ import { AdminProfileView } from './AdminProfileView';
 import { AdminFeedbackView } from './AdminFeedbackView';
 import { AdminStaffView } from './AdminStaffView';
 import { StudentEditModal } from '../common/StudentEditModal';
+import { PasswordChangeModal } from '../common/PasswordChangeModal';
+import { AnnouncementsManagerView } from '../common/AnnouncementsManagerView';
 import { 
   Users, 
   Search, 
@@ -120,6 +122,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Selected student for viewing / editing
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
   const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   // Bulk student selection for deletion or operations
   const [selectedRegNos, setSelectedRegNos] = useState<string[]>([]);
@@ -1363,107 +1366,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* TAB 6: ANNOUNCEMENTS MANAGEMENT */}
       {activeTab === 'announcements' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <form onSubmit={handlePublishAnnouncement} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
-            <h3 className="text-sm font-bold text-slate-900 font-serif">Publish College Notice</h3>
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Title</label>
-              <input
-                type="text"
-                value={annTitle}
-                onChange={e => setAnnTitle(e.target.value)}
-                placeholder="e.g. Smart India Hackathon internal round"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Category</label>
-              <select
-                value={annCategory}
-                onChange={e => setAnnCategory(e.target.value as any)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-              >
-                <option value="General">General</option>
-                <option value="Hackathon">Hackathon</option>
-                <option value="Workshop">Workshop</option>
-                <option value="Competition">Competition</option>
-                <option value="Administrative">Administrative</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Description</label>
-              <textarea
-                rows={4}
-                value={annDesc}
-                onChange={e => setAnnDesc(e.target.value)}
-                placeholder="Enter complete notice details..."
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">External Link (Optional)</label>
-              <input
-                type="url"
-                value={annLink}
-                onChange={e => setAnnLink(e.target.value)}
-                placeholder="https://..."
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Link Button Label</label>
-              <input
-                type="text"
-                value={annLinkText}
-                onChange={e => setAnnLinkText(e.target.value)}
-                placeholder="e.g. Register Online"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-              />
-            </div>
-
-            <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-700">
-              <input
-                type="checkbox"
-                checked={annImportant}
-                onChange={e => setAnnImportant(e.target.checked)}
-                className="rounded text-red-600 w-4 h-4"
-              />
-              <span className="text-red-700">Mark as Important Notice (Red Alert Banner)</span>
-            </label>
-
-            <button
-              type="submit"
-              className="w-full py-2.5 px-4 text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 rounded-xl shadow-xs transition-colors"
-            >
-              Publish Notice
-            </button>
-          </form>
-
-          {/* Published Announcements List */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 font-serif">Published Notices</h3>
-            <div className="space-y-3">
-              {announcements.map(ann => (
-                <div key={ann.id} className="border border-slate-200 rounded-xl p-4 space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900">{ann.title}</span>
-                    <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                      {ann.category}
-                    </span>
-                  </div>
-                  <p className="text-slate-600">{ann.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <AnnouncementsManagerView
+          currentUser={user}
+          announcements={announcements}
+          onRefreshData={onRefreshData}
+          roleLabel="Admin"
+        />
       )}
 
       {/* TAB 7: AUDIT LOGS */}
@@ -1595,6 +1503,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           user={user}
           onBackToDashboard={() => setActiveTab('overview')}
           onUserUpdated={onUserUpdated}
+          onOpenChangePassword={() => setShowPasswordModal(true)}
         />
       )}
 
@@ -1646,6 +1555,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           await onRefreshData();
         }}
         userRole={user.role === 'SUPER_ADMIN' ? 'ADMIN' : 'ADMIN'}
+      />
+
+      {/* Password Change Modal */}
+      <PasswordChangeModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        identifier={user.email || user.registerNumber}
       />
     </div>
   );

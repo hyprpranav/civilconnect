@@ -7,7 +7,8 @@ import {
   Department, 
   AcademicYear,
   ALL_DEPARTMENTS,
-  PendingAccountRequest
+  PendingAccountRequest,
+  Announcement
 } from '../../types';
 import { storageService } from '../../services/storageService';
 import { AdminAnalyticsView } from '../admin/AdminAnalyticsView';
@@ -15,6 +16,8 @@ import { AdminStaffView } from '../admin/AdminStaffView';
 import { OfficerProfileView } from './OfficerProfileView';
 import { AirProfileCardModal } from '../admin/AirProfileCardModal';
 import { StudentEditModal } from '../common/StudentEditModal';
+import { AnnouncementsManagerView } from '../common/AnnouncementsManagerView';
+import { PasswordChangeModal } from '../common/PasswordChangeModal';
 import { 
   Users, 
   Search, 
@@ -48,6 +51,7 @@ import {
 interface OfficerDashboardProps {
   user: UserAccount;
   students: StudentProfile[];
+  announcements?: Announcement[];
   onRefreshData: () => void;
   externalTab?: string;
   onTabChange?: (tab: string) => void;
@@ -57,18 +61,20 @@ interface OfficerDashboardProps {
 export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   user,
   students,
+  announcements = [],
   onRefreshData,
   externalTab,
   onTabChange,
   onUserUpdated
 }) => {
-  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements'>('students');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   React.useEffect(() => {
     if (externalTab) {
       if (externalTab === 'dashboard') {
         setActiveTab('students');
-      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff', 'profile'].includes(externalTab)) {
+      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff', 'profile', 'announcements'].includes(externalTab)) {
         setActiveTab(externalTab as any);
       }
     }
@@ -322,6 +328,25 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
           user={user}
           onBackToDashboard={() => handleTabChange('students')}
           onUserUpdated={onUserUpdated}
+          onOpenChangePassword={() => setShowPasswordModal(true)}
+        />
+        <PasswordChangeModal
+          isOpen={showPasswordModal}
+          onClose={() => setShowPasswordModal(false)}
+          identifier={user.email || user.registerNumber}
+        />
+      </div>
+    );
+  }
+
+  if (activeTab === 'announcements') {
+    return (
+      <div className="space-y-6 font-sans">
+        <AnnouncementsManagerView
+          currentUser={user}
+          announcements={announcements}
+          onRefreshData={onRefreshData}
+          roleLabel="Faculty Officer"
         />
       </div>
     );
@@ -977,6 +1002,13 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
           await onRefreshData();
         }}
         userRole="OFFICER"
+      />
+
+      {/* Password Change Modal */}
+      <PasswordChangeModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        identifier={user.email || user.registerNumber}
       />
     </div>
   );

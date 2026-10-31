@@ -326,6 +326,7 @@ export const App: React.FC = () => {
                 <OfficerDashboard
                   user={currentUser}
                   students={students}
+                  announcements={announcements}
                   externalTab={sidebarTab}
                   onTabChange={setSidebarTab}
                   onRefreshData={refreshData}

@@ -332,9 +332,9 @@ export const OfficerProfileView: React.FC<OfficerProfileViewProps> = ({
                 <button
                   type="button"
                   onClick={onOpenChangePassword}
-                  className="text-[10px] font-bold text-blue-700 hover:underline"
+                  className="px-2.5 py-1 text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 rounded-lg shadow-2xs transition-colors cursor-pointer"
                 >
-                  Change
+                  Change Password
                 </button>
               )}
             </div>
