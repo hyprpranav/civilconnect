@@ -18,6 +18,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Immutable snapshots of interview marks and evaluator feedback
+    match /interview_evaluations/{evaluationId} {
+      allow read, write: if true;
+    }
+
     // 2. Staff Accounts Collection: Faculty and Department Administrators directory
     match /staff_accounts/{staffId} {
       allow read, write: if true;

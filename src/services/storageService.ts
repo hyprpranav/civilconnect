@@ -350,6 +350,19 @@ class StorageService {
             })
           );
         }
+
+        if (updatedStudent.interviewEvaluation) {
+          const evaluationSnapshotId = `${normKey}_${updatedStudent.interviewEvaluation.id}_${Date.now()}`;
+          await setDoc(
+            doc(db, 'interview_evaluations', evaluationSnapshotId),
+            sanitizeForFirestore({
+              ...updatedStudent.interviewEvaluation,
+              snapshotId: evaluationSnapshotId,
+              studentId: normKey,
+              evaluationSnapshotAt: new Date().toISOString()
+            })
+          );
+        }
       } catch (err) {
         console.error('[Firestore] Failed saving student to cloud:', err);
         throw new Error('Student data could not be saved permanently to the cloud. Please check the connection and try again.', { cause: err });
@@ -510,22 +523,37 @@ class StorageService {
       updatedAt: new Date().toISOString()
     };
 
-    // Save locally
     const students = await this.getStudents(true);
     const idx = students.findIndex(s => s.id === normKey || s.normalizedRegisterNumber === normKey);
-    if (idx >= 0) {
-      students[idx] = resetStudent;
-      localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
-    }
 
     // Save to Firestore
     const db = getFirestoreDb();
     if (db) {
       try {
+        if (student.interviewEvaluation) {
+          const evaluationSnapshotId = `${normKey}_${student.interviewEvaluation.id}_${Date.now()}`;
+          await setDoc(
+            doc(db, 'interview_evaluations', evaluationSnapshotId),
+            sanitizeForFirestore({
+              ...student.interviewEvaluation,
+              snapshotId: evaluationSnapshotId,
+              studentId: normKey,
+              evaluationSnapshotAt: new Date().toISOString(),
+              archivedBeforeReset: true
+            })
+          );
+        }
         await setDoc(doc(db, 'students', normKey), sanitizeForFirestore(resetStudent));
       } catch (err) {
-        console.warn('[Firestore] Reset student cloud save note:', err);
+        console.error('[Firestore] Reset student cloud save failed:', err);
+        throw new Error('Student data could not be reset safely in the cloud. No local reset was completed.', { cause: err });
       }
+    }
+
+    // Update the browser cache only after the cloud operation succeeds.
+    if (idx >= 0) {
+      students[idx] = resetStudent;
+      localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
     }
 
     // Write audit log
