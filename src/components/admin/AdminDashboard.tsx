@@ -352,6 +352,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         verifiedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+
       await storageService.saveStudent(updated);
       if (selectedStudent?.id === updated.id) {
         setSelectedStudent(updated);
@@ -369,6 +370,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       await onRefreshData();
     } catch (err) {
       console.warn('Failed to verify student', err);
+    }
+  };
+
+  const handleUnverifyStudent = async (student: StudentProfile) => {
+    if (!window.confirm(`Remove verification from ${student.name}? The profile data will be preserved and returned to review.`)) return;
+    try {
+      const updated: StudentProfile = {
+        ...student,
+        profileStatus: 'pending_review',
+        verificationStatus: 'pending',
+        verifiedBy: undefined,
+        verifiedAt: undefined,
+        updatedAt: new Date().toISOString()
+      };
+      await storageService.saveStudent(updated);
+      if (selectedStudent?.id === updated.id) setSelectedStudent(updated);
+      await storageService.addAuditLog({
+        performedBy: user.uid,
+        performerName: user.name,
+        role: user.role,
+        action: 'STUDENT_UNVERIFIED',
+        affectedCollection: 'students',
+        affectedRecordIds: [student.id, student.registerNumber],
+        operationStatus: 'success',
+        details: `Verification removed for ${student.name} (${student.registerNumber}); profile data preserved.`
+      });
+      await onRefreshData();
+    } catch (err) {
+      console.error('Failed to remove student verification', err);
+      alert(err instanceof Error ? err.message : 'Failed to remove student verification.');
     }
   };
 
@@ -1600,6 +1631,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           await onRefreshData();
         }}
         onVerifyStudent={handleQuickVerifyStudent}
+        onUnverifyStudent={handleUnverifyStudent}
       />
 
       {/* Student Edit Record Modal */}

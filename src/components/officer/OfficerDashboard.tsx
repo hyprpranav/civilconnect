@@ -211,6 +211,7 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
         verifiedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+
       await storageService.saveStudent(updated);
       onRefreshData();
       if (viewingStudent?.id === student.id) {
@@ -218,6 +219,26 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
       }
     } catch (err) {
       console.error('Failed to verify student', err);
+    }
+  };
+
+  const handleUnverifyStudent = async (student: StudentProfile) => {
+    if (!window.confirm(`Remove verification from ${student.name}? The profile data will be preserved and returned to review.`)) return;
+    try {
+      const updated: StudentProfile = {
+        ...student,
+        profileStatus: 'pending_review',
+        verificationStatus: 'pending',
+        verifiedBy: undefined,
+        verifiedAt: undefined,
+        updatedAt: new Date().toISOString()
+      };
+      await storageService.saveStudent(updated);
+      if (viewingStudent?.id === updated.id) setViewingStudent(updated);
+      await onRefreshData();
+    } catch (err) {
+      console.error('Failed to remove student verification', err);
+      alert(err instanceof Error ? err.message : 'Failed to remove student verification.');
     }
   };
 
@@ -1242,6 +1263,7 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
           await onRefreshData();
         }}
         onVerifyStudent={handleQuickVerifyStudent}
+        onUnverifyStudent={handleUnverifyStudent}
       />
 
       {/* Unified Student Edit Record Modal for Faculty & Staff */}

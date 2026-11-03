@@ -57,6 +57,12 @@ export const ExportCenterView: React.FC<ExportCenterViewProps> = ({
     }
   };
 
+  const csvCell = (value: unknown) => {
+    if (value === null || value === undefined) return '""';
+    const text = typeof value === 'string' ? value : JSON.stringify(value);
+    return `"${text.replace(/"/g, '""')}"`;
+  };
+
   // Helper to find assigned team code for student
   const getAssignedTeamInfo = (student: StudentProfile) => {
     const assignedTeam = teams.find(t =>
@@ -97,17 +103,45 @@ export const ExportCenterView: React.FC<ExportCenterViewProps> = ({
 
   // 3. Full Student Data (CSV) with Exact Submission Timestamp & Team
   const exportFullStudentData = () => {
-    const headers = 'Register Number,Name,Department,Academic Year,Official Email,Phone Number,Profile Status,Completion Percentage,Form Submission Date & Time,Assigned Team Code,Assigned Team Name,Skills,Interests,Preferred Role,Travel Willing,Leader Willing,Confirmation ID\n';
-    const rows = students.map(s => {
+    const headers = [
+      'Serial Number', 'Register Number', 'Name', 'Department', 'Academic Year', 'Official Email', 'Phone Number',
+      'Date of Birth', 'Club / Association', 'Japanese Student', 'AWS Interested', 'Registration Status',
+      'Confirmation ID', 'Registration Date', 'Profile Image URL', 'Profile Status', 'Verification Status',
+      'Profile Completion Percentage', 'Submitted At', 'Updated At', 'Verified By', 'Verified At',
+      'Strongest Skills', 'Other Skill', 'Interest Activities', 'Custom Interests', 'Organizes College Events',
+      'Participates in External Events', 'Applies for Funding', 'Represents College', 'Organizes Workshops',
+      'Team Roles', 'Logistics Skills', 'Additional Contributions', 'Preferred Role', 'Preferred Technical Domain',
+      'Project Mode', 'Preferred Team Size', 'Previous Project Experience', 'Hackathon Experience',
+      'Previous Event Participation', 'Availability', 'Willing to Travel', 'Worked in Team',
+      'Participated in Hackathon', 'Developed Technical Project', 'Has Project Portfolio', 'Willing to Lead',
+      'Collaborate Across Departments', 'Preferred Project Categories', 'GitHub Profile', 'LinkedIn Profile',
+      'Portfolio Website', 'Previous Project Links', 'Interview Evaluation JSON', 'Assigned Team Code',
+      'Assigned Team Name', 'Complete Student Record JSON'
+    ].map(csvCell).join(',') + '\n';
+    const rows = students.map((s, index) => {
       const tm = getAssignedTeamInfo(s);
-      const skills = (s.skills?.strongestSkills || []).join('; ');
-      const interests = (s.interests?.activities || []).join('; ');
-      const role = s.teamPreferences?.preferredRole || '';
-      const travel = s.teamPreferences?.willingnessToTravel ? 'Yes' : 'No';
-      const lead = s.teamPreferences?.willingToLeadTeam ? 'Yes' : 'No';
-      const submissionDate = formatDateTime(s.submittedAt || s.updatedAt);
-
-      return `"${s.registerNumber}","${s.name}","${s.department}","${s.academicYear}","${s.email}","${s.phone || ''}","${s.profileStatus}",${s.profileCompletionPercentage}%,"${submissionDate}","${tm.teamCode}","${tm.teamName}","${skills}","${interests}","${role}","${travel}","${lead}","${s.confirmationId || ''}"`;
+      const i = s.interests;
+      const t = s.teamStrengths;
+      const p = s.teamPreferences;
+      return [
+        index + 1, s.registerNumber, s.name, s.department, s.academicYear, s.email, s.phone, s.dob,
+        s.club, s.japaneseStudent, s.awsInterested, s.registrationStatus, s.confirmationId, s.registrationDate,
+        s.profileImage, s.profileStatus, s.verificationStatus || '', `${s.profileCompletionPercentage}%`,
+        formatDateTime(s.submittedAt), formatDateTime(s.updatedAt), s.verifiedBy || '', formatDateTime(s.verifiedAt),
+        s.skills?.strongestSkills || [], s.skills?.otherSkill || '', i?.activities || [], i?.customInterests || '',
+        i?.organizeCollegeEvents ? 'Yes' : 'No', i?.participateExternalEvents ? 'Yes' : 'No',
+        i?.applyFundingOpportunities ? 'Yes' : 'No', i?.representCollege ? 'Yes' : 'No',
+        i?.organizeTechnicalWorkshops ? 'Yes' : 'No', t?.roles || [], t?.logisticsSkills || [],
+        t?.additionalContributions || '', p?.preferredRole || '', p?.preferredTechnicalDomain || '',
+        p?.projectMode || '', p?.preferredTeamSize || '', p?.previousProjectExperience || '',
+        p?.hackathonExperience || '', p?.previousEventParticipation || '', p?.availability || '',
+        p?.willingnessToTravel ? 'Yes' : 'No', p?.workedInTeam ? 'Yes' : 'No',
+        p?.participatedInHackathon ? 'Yes' : 'No', p?.developedTechnicalProject ? 'Yes' : 'No',
+        p?.hasProjectPortfolio ? 'Yes' : 'No', p?.willingToLeadTeam ? 'Yes' : 'No',
+        p?.collaborateAcrossDepartments ? 'Yes' : 'No', p?.preferredProjectCategories || [],
+        p?.githubProfile || '', p?.linkedinProfile || '', p?.portfolioWebsite || '', p?.previousProjectLinks || '',
+        s.interviewEvaluation || '', tm.teamCode, tm.teamName, s
+      ].map(csvCell).join(',');
     }).join('\n');
     triggerDownload(`civil_connect_full_student_roster_${Date.now()}.csv`, headers + rows);
   };

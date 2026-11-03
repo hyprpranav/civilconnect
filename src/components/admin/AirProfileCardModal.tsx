@@ -47,6 +47,7 @@ interface AirProfileCardModalProps {
   onInterview?: (student: StudentProfile) => void;
   onStudentUpdated?: (updated: StudentProfile) => void;
   onVerifyStudent?: (student: StudentProfile) => void;
+  onUnverifyStudent?: (student: StudentProfile) => void;
   onResetData?: (student: StudentProfile) => void;
   canEditPhoto?: boolean;
   teams?: TeamFormation[];
@@ -60,6 +61,7 @@ export const AirProfileCardModal: React.FC<AirProfileCardModalProps> = ({
   onInterview,
   onStudentUpdated,
   onVerifyStudent,
+  onUnverifyStudent,
   onResetData,
   canEditPhoto = true,
   teams = [],
@@ -229,7 +231,16 @@ Domain: ${student.teamPreferences?.preferredTechnicalDomain || 'N/A'}`;
             </div>
 
             <div className="flex items-center gap-2">
-              {student.profileStatus !== 'verified' && onVerifyStudent && (
+              {student.profileStatus === 'verified' && onUnverifyStudent ? (
+                <button
+                  onClick={() => onUnverifyStudent(student)}
+                  className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                  title="Remove verification and return to review"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Unverify</span>
+                </button>
+              ) : student.profileStatus !== 'verified' && onVerifyStudent && (
                 <button
                   onClick={() => onVerifyStudent(student)}
                   className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
