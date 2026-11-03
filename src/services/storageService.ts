@@ -128,20 +128,9 @@ class StorageService {
           students = snap.docs.map(d => d.data() as StudentProfile);
           localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
         } else {
-          // Cloud Firestore is fresh/empty: Batch-seed all initial students to cloud
-          students = INITIAL_STUDENTS;
-          try {
-            const batch = writeBatch(db);
-            students.forEach(s => {
-              const sRef = doc(db, 'students', s.id);
-              batch.set(sRef, sanitizeForFirestore(s));
-            });
-            await batch.commit();
-            console.log('[Firestore] Successfully seeded 97 initial students to Cloud Firestore.');
-          } catch (seedErr) {
-            console.warn('[Firestore] Failed seeding students to cloud:', seedErr);
-          }
-          localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+          // Never reseed production from the bundled snapshot. A temporarily
+          // empty collection must not overwrite or replace student submissions.
+          console.warn('[Firestore] Students collection is empty; using the local cache without reseeding cloud data.');
         }
       } catch (cloudErr) {
         console.warn('[Firestore] Students fetch failed, falling back to local cache:', cloudErr);
@@ -323,7 +312,8 @@ class StorageService {
       try {
         await setDoc(doc(db, 'students', normKey), sanitizeForFirestore(updatedStudent), { merge: true });
       } catch (err) {
-        console.warn('[Firestore] Failed saving student to cloud:', err);
+        console.error('[Firestore] Failed saving student to cloud:', err);
+        throw new Error('Student data could not be saved to the cloud. Please check the connection and try again.', { cause: err });
       }
     }
 
@@ -387,7 +377,8 @@ class StorageService {
       try {
         await setDoc(doc(db, 'students', normReg), sanitizeForFirestore(newStudent));
       } catch (err) {
-        console.warn('[Firestore] Failed adding student to cloud:', err);
+        console.error('[Firestore] Failed adding student to cloud:', err);
+        throw new Error('Student account could not be saved to the cloud. Please check the connection and try again.', { cause: err });
       }
     }
 
