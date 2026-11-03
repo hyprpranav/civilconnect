@@ -170,6 +170,7 @@ export const ProfessionalProfileForm: React.FC<ProfessionalProfileFormProps> = (
         teamStrengths,
         teamPreferences,
         profileStatus: 'pending_review',
+        verificationStatus: 'pending',
         submittedAt: new Date().toISOString()
       });
 

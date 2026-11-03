@@ -102,11 +102,14 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
   };
 
   useEffect(() => {
-    loadTeams();
+    const unsubscribeTeams = storageService.subscribeToTeams(setTeams);
     const unsub = storageService.subscribeToTeamRequests(requests => {
       setTeamProposals(requests);
     });
-    return () => unsub();
+    return () => {
+      unsubscribeTeams();
+      unsub();
+    };
   }, []);
 
   const handleApproveProposal = async (req: TeamProposalRequest) => {
@@ -257,17 +260,23 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
     if (!memberSearchQuery.trim()) return [];
     const q = memberSearchQuery.toLowerCase().trim();
     const existingIds = new Set(formMembers.map(m => m.studentId.toLowerCase()));
+    const assignedToOtherTeam = new Set(
+      teams
+        .filter(team => team.id !== editingTeamId && team.status !== 'Disbanded')
+        .flatMap(team => team.members.map(member => member.studentId.toLowerCase()))
+    );
 
     return students
       .filter(s => {
         if (existingIds.has(s.id.toLowerCase())) return false;
+        if (assignedToOtherTeam.has(s.id.toLowerCase())) return false;
         const reg = s.registerNumber.toLowerCase();
         const name = s.name.toLowerCase();
         const dept = (s.department || '').toLowerCase();
         return reg.includes(q) || name.includes(q) || dept.includes(q);
       })
       .slice(0, 8);
-  }, [students, memberSearchQuery, formMembers]);
+  }, [students, teams, editingTeamId, memberSearchQuery, formMembers]);
 
   // Add member to form
   const handleAddMember = (student: StudentProfile) => {
@@ -1277,6 +1286,27 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                             <div className="text-xs font-bold text-slate-900">{candidate.name}</div>
                             <div className="text-[11px] font-mono text-slate-500">
                               {candidate.registerNumber} • {candidate.department} ({candidate.academicYear})
+                            </div>
+                            <div className="text-[10px] font-semibold text-slate-600">
+                              Profile: {candidate.profileCompletionPercentage}% • {
+                                candidate.verificationStatus === 'verified' || candidate.profileStatus === 'verified'
+                                  ? 'Verified'
+                                  : candidate.verificationStatus === 'pending' || candidate.profileStatus === 'pending_review'
+                                  ? 'Pending verification'
+                                  : 'Incomplete'
+                              }
+                            </div>
+                            <div className="flex flex-wrap gap-1 pt-1">
+                              {(candidate.skills?.strongestSkills || []).slice(0, 5).map(skill => (
+                                <span key={skill} className="px-1.5 py-0.5 rounded bg-blue-50 text-[9px] font-semibold text-blue-800">
+                                  {skill}
+                                </span>
+                              ))}
+                              {(candidate.teamStrengths?.roles || []).slice(0, 3).map(role => (
+                                <span key={role} className="px-1.5 py-0.5 rounded bg-teal-50 text-[9px] font-semibold text-teal-800">
+                                  {role}
+                                </span>
+                              ))}
                             </div>
                           </div>
                           <button

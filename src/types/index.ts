@@ -151,6 +151,9 @@ export interface StudentProfile {
   // Status and Meta
   profileCompletionPercentage: number;
   profileStatus: 'draft' | 'pending_review' | 'verified' | 'needs_update';
+  verificationStatus?: 'pending' | 'verified' | 'rejected';
+  verifiedBy?: string;
+  verifiedAt?: string;
   submittedAt?: string;
   updatedAt: string;
   createdAt: string;
@@ -365,4 +368,3 @@ export interface PendingAccountRequest {
   approvedAt?: string;
   rejectionReason?: string;
 }
-

@@ -119,26 +119,30 @@ class StorageService {
   public async getStudents(includeArchived = false): Promise<StudentProfile[]> {
     let students: StudentProfile[] = [];
     const db = getFirestoreDb();
+    let cloudReadSucceeded = false;
 
     // 1. Try fetching from Cloud Firestore
     if (db) {
       try {
         const snap = await getDocs(collection(db, 'students'));
+        cloudReadSucceeded = true;
         if (!snap.empty) {
           students = snap.docs.map(d => d.data() as StudentProfile);
           localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
         } else {
           // Never reseed production from the bundled snapshot. A temporarily
           // empty collection must not overwrite or replace student submissions.
-          console.warn('[Firestore] Students collection is empty; using the local cache without reseeding cloud data.');
+          console.warn('[Firestore] Students collection is empty; no local cache is used because Firestore is the source of truth.');
         }
       } catch (cloudErr) {
         console.warn('[Firestore] Students fetch failed, falling back to local cache:', cloudErr);
       }
     }
 
-    // 2. Fallback to local storage cache if offline or cloud read failed
-    if (students.length === 0) {
+    // 2. Use local storage only when Firestore is unavailable or the read failed.
+    // A successful empty cloud read must remain empty; never substitute a stale
+    // browser cache for the database source of truth.
+    if (students.length === 0 && !cloudReadSucceeded) {
       try {
         const data = localStorage.getItem(STORAGE_KEYS.STUDENTS);
         if (data) {
@@ -195,10 +199,24 @@ class StorageService {
   }
 
   public async getStudentById(identifier: string): Promise<StudentProfile | null> {
-    const students = await this.getStudents(true);
     const key = identifier.toLowerCase().trim();
     if (!key) return null;
 
+    // Prefer the canonical Firestore document for register-number lookups so a
+    // stale browser cache can never mask a newer cloud submission.
+    const db = getFirestoreDb();
+    if (db) {
+      try {
+        const directSnap = await getDoc(doc(db, 'students', key));
+        if (directSnap.exists()) {
+          return directSnap.data() as StudentProfile;
+        }
+      } catch (err) {
+        console.warn('[Firestore] Direct student lookup failed; continuing with indexed lookup:', err);
+      }
+    }
+
+    const students = await this.getStudents(true);
     const inputDigits = key.replace(/\D/g, '');
 
     const found = students.find(s => {
@@ -256,7 +274,6 @@ class StorageService {
     if (found) return found;
 
     // Direct Firestore doc lookup fallback for newly created students or cold starts
-    const db = getFirestoreDb();
     if (db) {
       try {
         const docRef = doc(db, 'students', key);
@@ -284,6 +301,13 @@ class StorageService {
       normalizedRegisterNumber: normKey,
       normalizedEmail: student.email.toLowerCase().trim(),
       profileCompletionPercentage: completion,
+      verificationStatus: student.verificationStatus || (
+        student.profileStatus === 'verified'
+          ? 'verified'
+          : student.profileStatus === 'pending_review'
+          ? 'pending'
+          : undefined
+      ),
       updatedAt: new Date().toISOString()
     };
 

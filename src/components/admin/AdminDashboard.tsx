@@ -13,6 +13,7 @@ import {
   PendingAccountRequest
 } from '../../types';
 import { storageService } from '../../services/storageService';
+import { getStudentMetrics } from '../../services/studentMetrics';
 import { teamService } from '../../services/teamService';
 import { AdminPinModal } from '../common/AdminPinModal';
 import { AdminAnalyticsView } from './AdminAnalyticsView';
@@ -272,6 +273,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const activeStudentsCount = students.filter(s => !s.isArchived).length;
   const completedCount = students.filter(s => s.profileCompletionPercentage === 100).length;
   const pendingCount = students.filter(s => s.profileCompletionPercentage < 100).length;
+  const studentMetrics = getStudentMetrics(students);
   const pendingRequestsCount = requests.filter(r => r.status === 'Pending').length + pendingAccountRequests.length;
 
   // Selection handlers
@@ -321,6 +323,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const updated: StudentProfile = {
         ...student,
         profileStatus: 'verified',
+        verificationStatus: 'verified',
+        verifiedBy: user.uid,
+        verifiedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       await storageService.saveStudent(updated);
@@ -688,6 +693,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Events & Notices</p>
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+        {[
+          ['Submitted Profiles', studentMetrics.submitted],
+          ['Completed Profiles', studentMetrics.completed],
+          ['Verified Students', studentMetrics.verified],
+          ['Incomplete Profiles', studentMetrics.incomplete]
+        ].map(([label, value]) => (
+          <div key={label} className="bg-white px-3.5 py-3 rounded-xl border border-slate-200 shadow-2xs">
+            <p className="text-lg font-extrabold text-slate-900">{value}</p>
+            <p className="text-[10px] text-slate-500 font-semibold">{label}</p>
+          </div>
+        ))}
       </div>
 
       {/* TAB 1: OVERVIEW (Screenshot 1: Master Control Center & Workspace) */}

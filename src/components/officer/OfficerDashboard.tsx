@@ -12,6 +12,7 @@ import {
   TeamFormation 
 } from '../../types';
 import { storageService } from '../../services/storageService';
+import { getStudentMetrics } from '../../services/studentMetrics';
 import { AdminAnalyticsView } from '../admin/AdminAnalyticsView';
 import { AdminStaffView } from '../admin/AdminStaffView';
 import { OfficerProfileView } from './OfficerProfileView';
@@ -201,6 +202,9 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
       const updated: StudentProfile = {
         ...student,
         profileStatus: 'verified',
+        verificationStatus: 'verified',
+        verifiedBy: user.uid,
+        verifiedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       await storageService.saveStudent(updated);
@@ -290,6 +294,7 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   const totalAssigned = students.length;
   const verifiedCount = students.filter(s => s.profileStatus === 'verified').length;
   const pendingReviewCount = students.filter(s => s.profileStatus === 'pending_review').length;
+  const studentMetrics = getStudentMetrics(students);
   const avgCompletion = Math.round(
     students.reduce((acc, curr) => acc + curr.profileCompletionPercentage, 0) / (totalAssigned || 1)
   );
@@ -537,6 +542,20 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
           <p className="text-xl sm:text-3xl font-extrabold text-teal-900">{avgCompletion}%</p>
           <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Across all competencies</p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+        {[
+          ['Submitted Profiles', studentMetrics.submitted],
+          ['Completed Profiles', studentMetrics.completed],
+          ['Verified Students', studentMetrics.verified],
+          ['Incomplete Profiles', studentMetrics.incomplete]
+        ].map(([label, value]) => (
+          <div key={label} className="bg-white px-3.5 py-3 rounded-xl border border-slate-200 shadow-2xs">
+            <p className="text-lg font-extrabold text-slate-900">{value}</p>
+            <p className="text-[10px] text-slate-500 font-semibold">{label}</p>
+          </div>
+        ))}
       </div>
 
       {/* TAB 1: STUDENT DIRECTORY (Enhanced, highly readable UI!) */}
