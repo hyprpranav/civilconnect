@@ -31,6 +31,7 @@ import { teamService } from '../../services/teamService';
 interface TeamsManagerViewProps {
   currentUser: UserAccount;
   students: StudentProfile[];
+  staffAccounts?: UserAccount[];
   onTeamUpdated?: () => void;
 }
 
@@ -73,9 +74,16 @@ const COMPETITION_REQUIREMENTS: Record<string, string[]> = {
 export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
   currentUser,
   students,
+  staffAccounts = [],
   onTeamUpdated
 }) => {
   const isAdmin = currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN';
+  const guideAccounts = useMemo(() => {
+    const accounts = currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN'
+      ? [currentUser, ...staffAccounts]
+      : staffAccounts;
+    return Array.from(new Map(accounts.map(account => [account.uid, account])).values());
+  }, [currentUser, staffAccounts]);
 
   const [teams, setTeams] = useState<TeamFormation[]>([]);
   const [teamProposals, setTeamProposals] = useState<TeamProposalRequest[]>([]);
@@ -101,6 +109,7 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
   const [formTargetCompetition, setFormTargetCompetition] = useState('Smart India Hackathon / Technical Symposium');
   const [formNotes, setFormNotes] = useState('');
   const [formMembers, setFormMembers] = useState<TeamMember[]>([]);
+  const [formGuideUid, setFormGuideUid] = useState('');
 
   // Deletion Security PIN state (927624)
   const [teamToDelete, setTeamToDelete] = useState<TeamFormation | null>(null);
@@ -109,6 +118,8 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
 
   // Member search inside modal
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [memberRosterPage, setMemberRosterPage] = useState(1);
+  const memberPageSize = 15;
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -260,7 +271,9 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
     setFormTargetCompetition('Smart India Hackathon / Technical Symposium');
     setFormNotes('');
     setFormMembers([]);
+    setFormGuideUid('');
     setMemberSearchQuery('');
+    setMemberRosterPage(1);
     setFeedback(null);
     setIsModalOpen(true);
   };
@@ -276,14 +289,15 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
     setFormTargetCompetition(team.targetCompetition || '');
     setFormNotes(team.notes || '');
     setFormMembers([...team.members]);
+    setFormGuideUid(team.guideUid || '');
     setMemberSearchQuery('');
+    setMemberRosterPage(1);
     setFeedback(null);
     setIsModalOpen(true);
   };
 
   // Search candidates to add into team
-  const searchedCandidates = useMemo(() => {
-    if (!memberSearchQuery.trim()) return [];
+  const candidateRoster = useMemo(() => {
     const q = memberSearchQuery.toLowerCase().trim();
     const existingIds = new Set(formMembers.map(m => m.studentId.toLowerCase()));
     const assignedToOtherTeam = new Set(
@@ -317,8 +331,13 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
         return reg.includes(q) || name.includes(q) || dept.includes(q);
       })
       .sort((a, b) => scoreCandidate(b) - scoreCandidate(a))
-      .slice(0, 8);
+      ;
   }, [students, teams, editingTeamId, memberSearchQuery, formMembers, formTargetCompetition]);
+  const totalMemberPages = Math.max(1, Math.ceil(candidateRoster.length / memberPageSize));
+  const visibleCandidates = candidateRoster.slice(
+    (memberRosterPage - 1) * memberPageSize,
+    memberRosterPage * memberPageSize
+  );
 
   // Add member to form
   const handleAddMember = (student: StudentProfile) => {
@@ -402,6 +421,9 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
         createdBy: existingTeam ? existingTeam.createdBy : currentUser.name,
         creatorUid: existingTeam ? existingTeam.creatorUid : currentUser.uid,
         creatorRole: existingTeam ? existingTeam.creatorRole : currentUser.role,
+        guideUid: isAdmin ? formGuideUid || undefined : existingTeam?.guideUid,
+        guideName: isAdmin ? guideAccounts.find(account => account.uid === formGuideUid)?.name : existingTeam?.guideName,
+        guideEmail: isAdmin ? guideAccounts.find(account => account.uid === formGuideUid)?.email : existingTeam?.guideEmail,
         createdAt: existingTeam ? existingTeam.createdAt : now,
         updatedAt: now,
         status: targetStatus,
@@ -1047,6 +1069,10 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                       Created by: <strong className="text-slate-800">{team.createdBy}</strong> ({team.creatorRole || 'Staff'})
                     </span>
                     <span className="flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-teal-700" />
+                      Guide: <strong className="text-slate-800">{team.guideName || 'Not assigned'}</strong>
+                    </span>
+                    <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
                       {new Date(team.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                     </span>
@@ -1278,6 +1304,21 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                         Matching students are prioritized for the required skills.
                       </p>
                     )}
+                    {isAdmin && (
+                      <select
+                        value={formGuideUid}
+                        onChange={e => setFormGuideUid(e.target.value)}
+                        className="mt-2 w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white text-slate-900"
+                        aria-label="Assign team guide"
+                      >
+                        <option value="">No guide assigned</option>
+                        {guideAccounts.map(account => (
+                          <option key={account.uid} value={account.uid}>
+                            {account.name} ({account.role})
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
 
@@ -1325,9 +1366,9 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                   />
 
                   {/* Dropdown Candidate Matches */}
-                  {searchedCandidates.length > 0 && (
+                  {visibleCandidates.length > 0 && (
                     <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 max-h-56 overflow-y-auto divide-y divide-slate-100">
-                      {searchedCandidates.map(candidate => (
+                      {visibleCandidates.map(candidate => (
                         <div
                           key={candidate.id}
                           className="p-2.5 flex items-center justify-between hover:bg-blue-50/60 transition-colors"
@@ -1381,6 +1422,13 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                           </button>
                         </div>
                       ))}
+                      {totalMemberPages > 1 && (
+                        <div className="sticky bottom-0 flex items-center justify-between bg-white p-2 text-[10px] font-semibold text-slate-600 border-t">
+                          <button type="button" disabled={memberRosterPage === 1} onClick={() => setMemberRosterPage(page => page - 1)}>Previous</button>
+                          <span>Page {memberRosterPage} of {totalMemberPages}</span>
+                          <button type="button" disabled={memberRosterPage === totalMemberPages} onClick={() => setMemberRosterPage(page => page + 1)}>Next</button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -316,6 +316,9 @@ export interface TeamFormation {
   createdBy: string;
   creatorUid?: string;
   creatorRole?: UserRole;
+  guideUid?: string;
+  guideName?: string;
+  guideEmail?: string;
   createdAt: string;
   updatedAt?: string;
   status: 'Draft' | 'Finalised' | 'Forming' | 'Confirmed' | 'Active' | 'Disbanded';

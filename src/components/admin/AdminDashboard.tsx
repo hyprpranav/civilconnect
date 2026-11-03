@@ -1394,6 +1394,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <TeamsManagerView
           currentUser={user}
           students={students}
+          staffAccounts={staffAccounts}
           onTeamUpdated={loadAuxiliaryData}
         />
       )}
