@@ -100,6 +100,9 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState<string>('All');
   const [yearFilter, setYearFilter] = useState<string>('All');
+  const [statusFilter, setStatusFilter] = useState<
+    'All' | 'Not submitted' | 'Not completed' | 'Draft' | 'In progress' | 'Pending review' | 'Verified' | 'Not verified' | 'Rejected'
+  >('All');
   const [submissionFilter, setSubmissionFilter] = useState<'All' | 'Submitted' | 'Not submitted'>('All');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
@@ -272,9 +275,22 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
       s.verificationStatus === 'pending' ||
       s.verificationStatus === 'verified'
     );
+    const isVerified = s.verificationStatus === 'verified' || s.profileStatus === 'verified';
+    const isPendingReview = s.verificationStatus === 'pending' || s.profileStatus === 'pending_review';
+    const isRejected = s.verificationStatus === 'rejected' || s.profileStatus === 'needs_update';
+    const matchesStatus =
+      statusFilter === 'All' ||
+      (statusFilter === 'Not submitted' && !isSubmitted) ||
+      (statusFilter === 'Not completed' && s.profileCompletionPercentage < 100) ||
+      (statusFilter === 'Draft' && s.profileCompletionPercentage === 0 && !isSubmitted) ||
+      (statusFilter === 'In progress' && s.profileCompletionPercentage > 0 && s.profileCompletionPercentage < 100) ||
+      (statusFilter === 'Pending review' && isPendingReview) ||
+      (statusFilter === 'Verified' && isVerified) ||
+      (statusFilter === 'Not verified' && isSubmitted && !isVerified) ||
+      (statusFilter === 'Rejected' && isRejected);
     const matchesSubmission = submissionFilter === 'All' ||
       (submissionFilter === 'Submitted' ? isSubmitted : !isSubmitted);
-    return matchesSearch && matchesDept && matchesYear && matchesSubmission;
+    return matchesSearch && matchesDept && matchesYear && matchesStatus && matchesSubmission;
   });
 
   const totalPages = Math.ceil(filteredStudents.length / pageSize) || 1;
@@ -631,6 +647,25 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
                 <option value="2nd Year">2nd Year</option>
                 <option value="3rd Year">3rd Year</option>
                 <option value="4th Year">4th Year</option>
+              </select>
+              <select
+                value={statusFilter}
+                onChange={e => {
+                  setStatusFilter(e.target.value as typeof statusFilter);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 text-xs sm:text-sm font-semibold border border-slate-300 rounded-xl bg-white shadow-2xs"
+                aria-label="Filter profile status"
+              >
+                <option value="All">All review statuses</option>
+                <option value="Not submitted">Not submitted</option>
+                <option value="Not completed">Not completed</option>
+                <option value="Draft">Not started</option>
+                <option value="In progress">In progress</option>
+                <option value="Pending review">Pending review</option>
+                <option value="Verified">Verified</option>
+                <option value="Not verified">Not verified</option>
+                <option value="Rejected">Rejected / needs update</option>
               </select>
               <select
                 value={submissionFilter}

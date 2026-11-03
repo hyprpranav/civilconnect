@@ -118,7 +118,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState<string>('All');
   const [yearFilter, setYearFilter] = useState<string>('All');
-  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [statusFilter, setStatusFilter] = useState<
+    'All' | 'Not submitted' | 'Not completed' | 'Draft' | 'In progress' | 'Pending review' | 'Verified' | 'Not verified' | 'Rejected'
+  >('All');
   const [submissionFilter, setSubmissionFilter] = useState<'All' | 'Submitted' | 'Not submitted'>('All');
   const [sortBy, setSortBy] = useState<'name' | 'reg' | 'completion'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -255,7 +257,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         s.email.toLowerCase().includes(search.toLowerCase());
       const matchDept = deptFilter === 'All' || s.department === deptFilter;
       const matchYear = yearFilter === 'All' || s.academicYear === yearFilter;
-      const matchStatus = statusFilter === 'All' || s.profileStatus === statusFilter;
       const isSubmitted = Boolean(
         s.submittedAt ||
         s.profileStatus === 'pending_review' ||
@@ -263,6 +264,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         s.verificationStatus === 'pending' ||
         s.verificationStatus === 'verified'
       );
+      const isVerified = s.verificationStatus === 'verified' || s.profileStatus === 'verified';
+      const isPendingReview = s.verificationStatus === 'pending' || s.profileStatus === 'pending_review';
+      const isRejected = s.verificationStatus === 'rejected' || s.profileStatus === 'needs_update';
+      const matchStatus =
+        statusFilter === 'All' ||
+        (statusFilter === 'Not submitted' && !isSubmitted) ||
+        (statusFilter === 'Not completed' && s.profileCompletionPercentage < 100) ||
+        (statusFilter === 'Draft' && s.profileCompletionPercentage === 0 && !isSubmitted) ||
+        (statusFilter === 'In progress' && s.profileCompletionPercentage > 0 && s.profileCompletionPercentage < 100) ||
+        (statusFilter === 'Pending review' && isPendingReview) ||
+        (statusFilter === 'Verified' && isVerified) ||
+        (statusFilter === 'Not verified' && isSubmitted && !isVerified) ||
+        (statusFilter === 'Rejected' && isRejected);
       const matchSubmission = submissionFilter === 'All' ||
         (submissionFilter === 'Submitted' ? isSubmitted : !isSubmitted);
       return matchSearch && matchDept && matchYear && matchStatus && matchSubmission;
@@ -917,13 +931,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               <select
                 value={statusFilter}
-                onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                onChange={e => { setStatusFilter(e.target.value as typeof statusFilter); setCurrentPage(1); }}
                 className="px-3 py-2 border border-slate-300 rounded-xl bg-white"
               >
-                <option value="All">All Statuses</option>
-                <option value="verified">Verified</option>
-                <option value="pending_review">Pending Review</option>
-                <option value="draft">Draft</option>
+                <option value="All">All review statuses</option>
+                <option value="Not submitted">Not submitted</option>
+                <option value="Not completed">Not completed</option>
+                <option value="Draft">Not started</option>
+                <option value="In progress">In progress</option>
+                <option value="Pending review">Pending review</option>
+                <option value="Verified">Verified</option>
+                <option value="Not verified">Not verified</option>
+                <option value="Rejected">Rejected / needs update</option>
               </select>
               <select
                 value={submissionFilter}
