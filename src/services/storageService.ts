@@ -311,9 +311,24 @@ class StorageService {
     if (db) {
       try {
         await setDoc(doc(db, 'students', normKey), sanitizeForFirestore(updatedStudent), { merge: true });
+
+        // Keep an immutable copy of every completed submission so a later
+        // profile update cannot destroy the submitted questionnaire.
+        if (completion === 100 || updatedStudent.profileStatus === 'pending_review' || updatedStudent.profileStatus === 'verified') {
+          const submissionId = `${normKey}_${Date.now()}`;
+          await setDoc(
+            doc(db, 'student_submissions', submissionId),
+            sanitizeForFirestore({
+              ...updatedStudent,
+              submissionId,
+              studentId: normKey,
+              submittedSnapshotAt: new Date().toISOString()
+            })
+          );
+        }
       } catch (err) {
         console.error('[Firestore] Failed saving student to cloud:', err);
-        throw new Error('Student data could not be saved to the cloud. Please check the connection and try again.', { cause: err });
+        throw new Error('Student data could not be saved permanently to the cloud. Please check the connection and try again.', { cause: err });
       }
     }
 
