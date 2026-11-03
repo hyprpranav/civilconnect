@@ -119,6 +119,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [deptFilter, setDeptFilter] = useState<string>('All');
   const [yearFilter, setYearFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [submissionFilter, setSubmissionFilter] = useState<'All' | 'Submitted' | 'Not submitted'>('All');
   const [sortBy, setSortBy] = useState<'name' | 'reg' | 'completion'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -255,7 +256,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const matchDept = deptFilter === 'All' || s.department === deptFilter;
       const matchYear = yearFilter === 'All' || s.academicYear === yearFilter;
       const matchStatus = statusFilter === 'All' || s.profileStatus === statusFilter;
-      return matchSearch && matchDept && matchYear && matchStatus;
+      const isSubmitted = Boolean(
+        s.submittedAt ||
+        s.profileStatus === 'pending_review' ||
+        s.profileStatus === 'verified' ||
+        s.verificationStatus === 'pending' ||
+        s.verificationStatus === 'verified'
+      );
+      const matchSubmission = submissionFilter === 'All' ||
+        (submissionFilter === 'Submitted' ? isSubmitted : !isSubmitted);
+      return matchSearch && matchDept && matchYear && matchStatus && matchSubmission;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -914,6 +924,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <option value="verified">Verified</option>
                 <option value="pending_review">Pending Review</option>
                 <option value="draft">Draft</option>
+              </select>
+              <select
+                value={submissionFilter}
+                onChange={e => { setSubmissionFilter(e.target.value as typeof submissionFilter); setCurrentPage(1); }}
+                className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-xl bg-white text-slate-800"
+                aria-label="Filter profile submissions"
+              >
+                <option value="All">All submissions</option>
+                <option value="Submitted">Submitted</option>
+                <option value="Not submitted">Not submitted</option>
               </select>
 
               {selectedRegNos.length > 0 && (

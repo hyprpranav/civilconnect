@@ -44,6 +44,32 @@ const AVAILABLE_ROLES = [
   'Operations & Logistics Lead'
 ];
 
+const COMPETITION_REQUIREMENTS: Record<string, string[]> = {
+  'Smart India Hackathon': [
+    'Team Leader',
+    'Hardware Development',
+    'Software Development',
+    'Presentation and Pitching',
+    'Documentation',
+    'Research and Development'
+  ],
+  'MSME / Government Scheme': [
+    'Team Leader',
+    'Research and Development',
+    'Documentation',
+    'Project Management',
+    'Presentation and Pitching'
+  ],
+  'Technical Symposium': [
+    'Team Leader',
+    'Software Development',
+    'Hardware Development',
+    'Presentation and Pitching',
+    'Documentation'
+  ],
+  'General Engineering': []
+};
+
 export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
   currentUser,
   students,
@@ -265,6 +291,21 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
         .filter(team => team.id !== editingTeamId && team.status !== 'Disbanded')
         .flatMap(team => team.members.map(member => member.studentId.toLowerCase()))
     );
+    const requirements = Object.entries(COMPETITION_REQUIREMENTS)
+      .find(([competition]) => formTargetCompetition.includes(competition))?.[1] || [];
+    const scoreCandidate = (student: StudentProfile) => {
+      const values = [
+        ...(student.skills?.strongestSkills || []),
+        ...(student.teamStrengths?.roles || []),
+        ...(student.teamStrengths?.logisticsSkills || [])
+      ].map(value => value.toLowerCase());
+      return requirements.filter(required =>
+        values.some(value =>
+          value.includes(required.toLowerCase()) ||
+          required.toLowerCase().includes(value)
+        )
+      ).length;
+    };
 
     return students
       .filter(s => {
@@ -275,8 +316,9 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
         const dept = (s.department || '').toLowerCase();
         return reg.includes(q) || name.includes(q) || dept.includes(q);
       })
+      .sort((a, b) => scoreCandidate(b) - scoreCandidate(a))
       .slice(0, 8);
-  }, [students, teams, editingTeamId, memberSearchQuery, formMembers]);
+  }, [students, teams, editingTeamId, memberSearchQuery, formMembers, formTargetCompetition]);
 
   // Add member to form
   const handleAddMember = (student: StudentProfile) => {
@@ -1221,13 +1263,21 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Target Competition
                     </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. SIH 2026, Symposium"
-                      value={formTargetCompetition}
+                    <select
+                      value={Object.keys(COMPETITION_REQUIREMENTS).find(competition => formTargetCompetition.includes(competition)) || 'General Engineering'}
                       onChange={e => setFormTargetCompetition(e.target.value)}
                       className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white text-slate-900"
-                    />
+                    >
+                      {Object.keys(COMPETITION_REQUIREMENTS).map(competition => (
+                        <option key={competition} value={competition}>{competition}</option>
+                      ))}
+                    </select>
+                    {(Object.entries(COMPETITION_REQUIREMENTS)
+                      .find(([competition]) => formTargetCompetition.includes(competition))?.[1] || []).length > 0 && (
+                      <p className="mt-1 text-[10px] text-slate-500">
+                        Matching students are prioritized for the required skills.
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -1295,6 +1345,18 @@ export const TeamsManagerView: React.FC<TeamsManagerViewProps> = ({
                                   ? 'Pending verification'
                                   : 'Incomplete'
                               }
+                            </div>
+                            <div className="flex flex-wrap gap-1 pt-1">
+                              {(candidate.skills?.strongestSkills || []).slice(0, 5).map(skill => (
+                                <span key={skill} className="px-1.5 py-0.5 rounded bg-blue-50 text-[9px] font-semibold text-blue-800">
+                                  {skill}
+                                </span>
+                              ))}
+                              {(candidate.teamStrengths?.roles || []).slice(0, 3).map(role => (
+                                <span key={role} className="px-1.5 py-0.5 rounded bg-teal-50 text-[9px] font-semibold text-teal-800">
+                                  {role}
+                                </span>
+                              ))}
                             </div>
                             <div className="flex flex-wrap gap-1 pt-1">
                               {(candidate.skills?.strongestSkills || []).slice(0, 5).map(skill => (

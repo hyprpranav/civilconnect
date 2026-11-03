@@ -100,6 +100,7 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState<string>('All');
   const [yearFilter, setYearFilter] = useState<string>('All');
+  const [submissionFilter, setSubmissionFilter] = useState<'All' | 'Submitted' | 'Not submitted'>('All');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
 
@@ -264,7 +265,16 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
       s.email.toLowerCase().includes(search.toLowerCase());
     const matchesDept = deptFilter === 'All' || s.department === deptFilter;
     const matchesYear = yearFilter === 'All' || s.academicYear === yearFilter;
-    return matchesSearch && matchesDept && matchesYear;
+    const isSubmitted = Boolean(
+      s.submittedAt ||
+      s.profileStatus === 'pending_review' ||
+      s.profileStatus === 'verified' ||
+      s.verificationStatus === 'pending' ||
+      s.verificationStatus === 'verified'
+    );
+    const matchesSubmission = submissionFilter === 'All' ||
+      (submissionFilter === 'Submitted' ? isSubmitted : !isSubmitted);
+    return matchesSearch && matchesDept && matchesYear && matchesSubmission;
   });
 
   const totalPages = Math.ceil(filteredStudents.length / pageSize) || 1;
@@ -621,6 +631,16 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
                 <option value="2nd Year">2nd Year</option>
                 <option value="3rd Year">3rd Year</option>
                 <option value="4th Year">4th Year</option>
+              </select>
+              <select
+                value={submissionFilter}
+                onChange={e => { setSubmissionFilter(e.target.value as typeof submissionFilter); setCurrentPage(1); }}
+                className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-xl bg-white text-slate-800"
+                aria-label="Filter profile submissions"
+              >
+                <option value="All">All submissions</option>
+                <option value="Submitted">Submitted</option>
+                <option value="Not submitted">Not submitted</option>
               </select>
             </div>
           </div>
