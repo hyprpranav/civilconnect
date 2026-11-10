@@ -182,19 +182,15 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#FBF9F5] text-stone-900 font-sans flex flex-col selection:bg-emerald-200 selection:text-emerald-950">
+    <div className="relative min-h-screen text-stone-900 font-sans flex flex-col selection:bg-emerald-200 selection:text-emerald-950 overflow-x-hidden scroll-smooth snap-y snap-proximity">
       
-      {/* Background Decorative Organic Eco Leaves pattern */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.035] bg-[radial-gradient(#059669_1px,transparent_1px)] [background-size:24px_24px] z-0" aria-hidden="true" />
-      
-      {/* Subtle organic gradient glows */}
-      <div className="fixed -top-40 -right-40 w-96 h-96 bg-emerald-200/40 rounded-full blur-3xl pointer-events-none z-0" />
-      <div className="fixed top-1/2 -left-40 w-96 h-96 bg-lime-100/60 rounded-full blur-3xl pointer-events-none z-0" />
+      {/* Fullscreen Responsive Background Layer for SUSTAINOVA (PC on desktop, Phone on mobile) */}
+      <div className="sustainova-bg-layer" aria-hidden="true" />
 
       {/* ========================================================= */}
       {/* A. HEADER */}
       {/* ========================================================= */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-900/10 shadow-xs">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-emerald-900/10 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 sm:h-20 flex items-center justify-between">
           
           {/* Left: Branding Suite (MKCE + ICI Logo + AAROH) */}
@@ -225,28 +221,28 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
           </div>
 
           {/* Right: Simple Navigation */}
-          <nav className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-semibold text-stone-700">
+          <nav className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm font-semibold text-stone-700">
             <a 
-              href="/" 
-              onClick={(e) => {
-                if (onNavigateHome) {
-                  e.preventDefault();
-                  onNavigateHome();
-                }
-              }}
+              href="#hero" 
               className="hover:text-emerald-700 transition-colors py-1 cursor-pointer"
             >
               Home
             </a>
             <a 
+              href="#overview" 
+              className="hover:text-emerald-700 transition-colors py-1 hidden xs:inline-block cursor-pointer"
+            >
+              Overview
+            </a>
+            <a 
               href="#about" 
-              className="hover:text-emerald-700 transition-colors py-1 hidden xs:inline-block"
+              className="hover:text-emerald-700 transition-colors py-1 hidden sm:inline-block cursor-pointer"
             >
               About
             </a>
             <a 
               href="#contact" 
-              className="hover:text-emerald-700 transition-colors py-1 hidden sm:inline-block"
+              className="hover:text-emerald-700 transition-colors py-1 cursor-pointer"
             >
               Contact
             </a>
@@ -264,10 +260,13 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
       {/* ========================================================= */}
       {/* B. HERO SECTION */}
       {/* ========================================================= */}
-      <section className="relative z-10 pt-10 pb-14 sm:pt-16 sm:pb-20 px-4 sm:px-6 max-w-5xl mx-auto text-center">
+      <section 
+        id="hero"
+        className="sustainova-section relative z-10 flex flex-col justify-center items-center text-center px-4 sm:px-6 max-w-5xl mx-auto w-full snap-start py-6 sm:py-8"
+      >
         
         {/* Organizer Badges */}
-        <div className="inline-flex flex-wrap items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold mb-6 shadow-2xs">
+        <div className="inline-flex flex-wrap items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-xs border border-emerald-200/90 text-emerald-800 text-xs font-semibold mb-4 sm:mb-6 shadow-2xs">
           <Leaf className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
           <span>ICI Sustainable Engineers Club</span>
           <span className="text-emerald-400">•</span>
@@ -280,20 +279,20 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
         </h1>
 
         {/* Subtitle */}
-        <p className="mt-4 text-lg xs:text-xl sm:text-2xl font-bold text-emerald-800 max-w-3xl mx-auto leading-snug">
+        <p className="mt-3 sm:mt-4 text-lg xs:text-xl sm:text-2xl font-bold text-emerald-800 max-w-3xl mx-auto leading-snug">
           Sustainable Innovation for Infrastructure and Industry
         </p>
 
         {/* Short value highlight */}
-        <p className="mt-3 text-sm sm:text-base text-stone-600 max-w-2xl mx-auto leading-relaxed">
+        <p className="mt-3 text-xs sm:text-base text-stone-700 max-w-2xl mx-auto leading-relaxed">
           A dedicated institutional symposium exploring future-proof green infrastructure, circular building systems, eco-friendly concrete technologies, and sustainable industrial frameworks.
         </p>
 
         {/* Prominent Green CTA Button */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
           <button
             onClick={handleOpenRegister}
-            className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-lg hover:shadow-xl shadow-emerald-700/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2.5 cursor-pointer ring-4 ring-emerald-600/10"
+            className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-lg hover:shadow-xl shadow-emerald-700/25 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2.5 cursor-pointer ring-4 ring-emerald-600/15"
           >
             <Sparkles className="w-5 h-5 text-emerald-200" />
             <span>CLICK HERE TO REGISTER</span>
@@ -302,16 +301,16 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
         </div>
 
         {/* Quick event highlights ribbon */}
-        <div className="mt-8 inline-flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-stone-600 bg-white/80 backdrop-blur-xs py-2 px-4 rounded-xl border border-stone-200/80 shadow-2xs">
-          <span className="flex items-center gap-1.5 text-emerald-800">
+        <div className="mt-6 sm:mt-8 inline-flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs font-semibold text-stone-700 bg-white/90 backdrop-blur-xs py-2 px-4 rounded-xl border border-stone-200/80 shadow-2xs">
+          <span className="flex items-center gap-1.5 text-emerald-900">
             <Calendar className="w-3.5 h-3.5 text-emerald-600" /> 11 Nov 2026
           </span>
-          <span>•</span>
-          <span className="flex items-center gap-1.5 text-emerald-800">
+          <span className="text-stone-300">•</span>
+          <span className="flex items-center gap-1.5 text-emerald-900">
             <Clock className="w-3.5 h-3.5 text-emerald-600" /> 09:00 AM – 04:00 PM
           </span>
-          <span>•</span>
-          <span className="flex items-center gap-1.5 text-emerald-800">
+          <span className="text-stone-300">•</span>
+          <span className="flex items-center gap-1.5 text-emerald-900">
             <MapPin className="w-3.5 h-3.5 text-emerald-600" /> Ramanujan Hall, MKCE
           </span>
         </div>
@@ -320,21 +319,25 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
       {/* ========================================================= */}
       {/* C. EVENT INFORMATION SECTION */}
       {/* ========================================================= */}
-      <section className="relative z-10 py-10 px-4 sm:px-6 max-w-5xl mx-auto w-full">
-        <div className="text-center mb-8">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-            Event Overview
-          </h2>
-          <p className="text-2xl sm:text-3xl font-extrabold text-stone-900 mt-1">
+      <section 
+        id="overview" 
+        className="sustainova-section relative z-10 flex flex-col justify-center items-center px-4 sm:px-6 max-w-5xl mx-auto w-full snap-start py-6 sm:py-8"
+      >
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50/90 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-2">
+            <Leaf className="w-3 h-3 text-emerald-600" />
+            <span>Event Overview</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-stone-900 tracking-tight">
             Official Workshop Details
-          </p>
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
           {/* Left Card: Schedule & Venue */}
-          <div className="bg-white rounded-2xl p-6 sm:p-7 border border-emerald-900/10 shadow-xs space-y-5">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-7 border border-emerald-900/10 shadow-sm space-y-4 sm:space-y-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100/80 text-emerald-800 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100/90 text-emerald-800 flex items-center justify-center shrink-0">
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
@@ -343,7 +346,7 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
               </div>
             </div>
 
-            <div className="space-y-3.5 text-xs sm:text-sm">
+            <div className="space-y-3 text-xs sm:text-sm">
               <div className="flex items-start justify-between py-2 border-b border-stone-100">
                 <span className="font-semibold text-stone-500">Event Name:</span>
                 <span className="font-bold text-emerald-900 text-right">SUSTAINOVA</span>
@@ -366,9 +369,9 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
           </div>
 
           {/* Right Card: Resource Person */}
-          <div className="bg-white rounded-2xl p-6 sm:p-7 border border-emerald-900/10 shadow-xs space-y-5">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-7 border border-emerald-900/10 shadow-sm space-y-4 sm:space-y-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-lime-100/80 text-lime-900 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-lime-100/90 text-lime-900 flex items-center justify-center shrink-0">
                 <Award className="w-5 h-5" />
               </div>
               <div>
@@ -377,7 +380,7 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
               </div>
             </div>
 
-            <div className="space-y-3.5 text-xs sm:text-sm">
+            <div className="space-y-3 text-xs sm:text-sm">
               <div className="flex items-start justify-between py-2 border-b border-stone-100">
                 <span className="font-semibold text-stone-500">Resource Person:</span>
                 <span className="font-extrabold text-stone-900 text-right">Dr. G. Balaji</span>
@@ -402,25 +405,28 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
       {/* ========================================================= */}
       {/* D. ABOUT SECTION */}
       {/* ========================================================= */}
-      <section id="about" className="relative z-10 py-10 px-4 sm:px-6 max-w-5xl mx-auto w-full">
-        <div className="bg-gradient-to-br from-emerald-900 to-teal-950 text-white rounded-3xl p-6 sm:p-10 shadow-md relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+      <section 
+        id="about" 
+        className="sustainova-section relative z-10 flex flex-col justify-center items-center px-4 sm:px-6 max-w-5xl mx-auto w-full snap-start py-6 sm:py-8"
+      >
+        <div className="bg-gradient-to-br from-emerald-900/95 via-teal-950/95 to-emerald-950/95 backdrop-blur-md text-white rounded-3xl p-6 sm:p-10 shadow-xl border border-emerald-700/30 relative overflow-hidden w-full">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none" />
           
           <div className="relative z-10 max-w-3xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-800/60 text-emerald-200 text-xs font-semibold mb-4 border border-emerald-700/50">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-800/70 text-emerald-200 text-xs font-semibold mb-4 border border-emerald-700/50 shadow-2xs">
               <Leaf className="w-3.5 h-3.5 text-emerald-300" />
               <span>Workshop Focus & Objectives</span>
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-4">
               About SUSTAINOVA 2026
             </h2>
 
-            <p className="text-sm sm:text-base text-emerald-100/90 leading-relaxed space-y-3 font-normal">
+            <p className="text-xs sm:text-base text-emerald-100/95 leading-relaxed space-y-3 font-normal">
               SUSTAINOVA brings together aspiring student engineers and innovators to address critical challenges in modern infrastructure and industrial sustainability. The session equips participants with actionable insights into low-carbon building materials, renewable lifecycle design, sustainable concrete matrixes, and smart environmental stewardship aligned with global green engineering standards.
             </p>
 
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-emerald-800/60 text-xs text-emerald-200">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5 border-t border-emerald-800/70 text-xs text-emerald-200">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>Green Infrastructure Design</span>
@@ -439,15 +445,19 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
       </section>
 
       {/* ========================================================= */}
-      {/* E. REGISTRATION SECTION */}
+      {/* E. REGISTRATION CTA & CONTACT ASSISTANCE DESK */}
       {/* ========================================================= */}
-      <section className="relative z-10 py-12 px-4 sm:px-6 max-w-4xl mx-auto w-full text-center">
-        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-emerald-900/10 shadow-sm space-y-5">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto shadow-2xs">
-            <Leaf className="w-7 h-7" />
+      <section 
+        id="contact" 
+        className="sustainova-section relative z-10 flex flex-col justify-center items-center px-4 sm:px-6 max-w-5xl mx-auto w-full snap-start py-6 sm:py-8 space-y-5"
+      >
+        {/* Join the Movement CTA Card */}
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-emerald-900/10 shadow-sm text-center w-full max-w-4xl mx-auto space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto shadow-2xs">
+            <Leaf className="w-6 h-6" />
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+          <h2 className="text-xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
             Join the Movement for Sustainable Infrastructure
           </h2>
 
@@ -455,10 +465,10 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
             Existing MKCE students across departments are invited to confirm their participation. Registration requires verifying your student record from the institutional database.
           </p>
 
-          <div className="pt-2">
+          <div className="pt-1">
             <button
               onClick={handleOpenRegister}
-              className="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-lg hover:shadow-xl shadow-emerald-700/20 hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center gap-2.5 cursor-pointer ring-4 ring-emerald-600/10"
+              className="px-8 py-3.5 sm:py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-lg hover:shadow-xl shadow-emerald-700/20 hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center gap-2.5 cursor-pointer ring-4 ring-emerald-600/10"
             >
               <Sparkles className="w-5 h-5 text-emerald-200" />
               <span>CLICK HERE TO REGISTER</span>
@@ -466,33 +476,29 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
             </button>
           </div>
         </div>
-      </section>
 
-      {/* ========================================================= */}
-      {/* CONTACT & ASSISTANCE SECTION */}
-      {/* ========================================================= */}
-      <section id="contact" className="relative z-10 py-12 px-4 sm:px-6 max-w-4xl mx-auto w-full">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-900/10 shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+        {/* Contact & Student Assistance Desk */}
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-5 sm:p-7 border border-emerald-900/10 shadow-sm w-full max-w-4xl mx-auto space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-3">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
                 Help & Student Assistance
               </span>
-              <h3 className="text-xl sm:text-2xl font-extrabold text-stone-900 mt-1">
+              <h3 className="text-lg sm:text-xl font-extrabold text-stone-900 mt-0.5">
                 Event Contact & Query Desk
               </h3>
-              <p className="text-xs sm:text-sm text-stone-600 mt-0.5">
+              <p className="text-xs text-stone-600">
                 Facing any issues with registration, student details not appearing, or need event assistance? Contact directly:
               </p>
             </div>
-            <div className="px-3.5 py-1.5 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 shrink-0 self-start sm:self-auto">
+            <div className="px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 shrink-0 self-start sm:self-auto">
               Direct Support
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200/80 flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/80 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
                 <User className="w-5 h-5" />
               </div>
               <div className="min-w-0">
@@ -503,9 +509,9 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
 
             <a
               href="tel:7845693765"
-              className="p-4 bg-emerald-50 hover:bg-emerald-100/90 text-emerald-950 rounded-2xl border border-emerald-200 flex items-center gap-3.5 transition-colors cursor-pointer group shadow-2xs"
+              className="p-3.5 bg-emerald-50 hover:bg-emerald-100/90 text-emerald-950 rounded-2xl border border-emerald-200 flex items-center gap-3 transition-colors cursor-pointer group shadow-2xs"
             >
-              <div className="w-11 h-11 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Phone className="w-5 h-5" />
               </div>
               <div className="min-w-0">
@@ -516,9 +522,9 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
 
             <a
               href="mailto:harishspranav259@gmail.com"
-              className="p-4 bg-emerald-50 hover:bg-emerald-100/90 text-emerald-950 rounded-2xl border border-emerald-200 flex items-center gap-3.5 transition-colors cursor-pointer group shadow-2xs"
+              className="p-3.5 bg-emerald-50 hover:bg-emerald-100/90 text-emerald-950 rounded-2xl border border-emerald-200 flex items-center gap-3 transition-colors cursor-pointer group shadow-2xs"
             >
-              <div className="w-11 h-11 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Mail className="w-5 h-5" />
               </div>
               <div className="min-w-0">

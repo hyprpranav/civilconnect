@@ -103,6 +103,42 @@
   }
 }
 
+/* SUSTAINOVA Event Dedicated Fullscreen Responsive Background Layer */
+.sustainova-bg-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url('/sustainova-pc.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  transition: background-image 0.3s ease-in-out;
+}
+
+@media (max-width: 768px) {
+  .sustainova-bg-layer {
+    background-image: url('/sustainova-phone.png');
+    background-size: cover;
+    background-position: center center;
+  }
+}
+
+/* Fullscreen Section Container for Sustainova Page */
+.sustainova-section {
+  min-height: calc(100vh - 4.5rem);
+  min-height: calc(100dvh - 4.5rem);
+  scroll-margin-top: 4.5rem;
+}
+
+@media (min-width: 640px) {
+  .sustainova-section {
+    min-height: calc(100vh - 5rem);
+    min-height: calc(100dvh - 5rem);
+    scroll-margin-top: 5rem;
+  }
+}
+
 /* Dashboard Glassmorphism: cards and panels are translucent with backdrop blur so the watermark is visible inside dashboards */
 main {
   background: transparent !important;
