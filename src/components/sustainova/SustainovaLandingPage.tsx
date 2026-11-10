@@ -20,7 +20,8 @@ import {
   ChevronRight,
   X,
   RefreshCw,
-  Award
+  Award,
+  HelpCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { StudentProfile, EventItem, EventRegistration } from '../../types';
@@ -468,9 +469,71 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
       </section>
 
       {/* ========================================================= */}
+      {/* CONTACT & ASSISTANCE SECTION */}
+      {/* ========================================================= */}
+      <section id="contact" className="relative z-10 py-12 px-4 sm:px-6 max-w-4xl mx-auto w-full">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-900/10 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                Help & Student Assistance
+              </span>
+              <h3 className="text-xl sm:text-2xl font-extrabold text-stone-900 mt-1">
+                Event Contact & Query Desk
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-600 mt-0.5">
+                Facing any issues with registration, student details not appearing, or need event assistance? Contact directly:
+              </p>
+            </div>
+            <div className="px-3.5 py-1.5 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 shrink-0 self-start sm:self-auto">
+              Direct Support
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200/80 flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                <User className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold uppercase text-stone-400 block tracking-wider">Event Coordinator</span>
+                <span className="text-xs sm:text-sm font-extrabold text-stone-900 block truncate">HARISH PRANAV S</span>
+              </div>
+            </div>
+
+            <a
+              href="tel:7845693765"
+              className="p-4 bg-emerald-50 hover:bg-emerald-100/90 text-emerald-950 rounded-2xl border border-emerald-200 flex items-center gap-3.5 transition-colors cursor-pointer group shadow-2xs"
+            >
+              <div className="w-11 h-11 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Phone className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold uppercase text-emerald-800 block tracking-wider">Click to Call Directly</span>
+                <span className="text-xs sm:text-sm font-black font-mono block truncate">7845693765</span>
+              </div>
+            </a>
+
+            <a
+              href="mailto:harishspranav259@gmail.com"
+              className="p-4 bg-emerald-50 hover:bg-emerald-100/90 text-emerald-950 rounded-2xl border border-emerald-200 flex items-center gap-3.5 transition-colors cursor-pointer group shadow-2xs"
+            >
+              <div className="w-11 h-11 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Mail className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold uppercase text-emerald-800 block tracking-wider">Click to Send Email</span>
+                <span className="text-xs sm:text-sm font-bold block truncate">harishspranav259@gmail.com</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================= */}
       {/* F. FOOTER */}
       {/* ========================================================= */}
-      <footer id="contact" className="relative z-10 mt-auto bg-stone-900 text-stone-300 border-t border-stone-800 py-10 px-4 sm:px-6">
+      <footer className="relative z-10 mt-auto bg-stone-900 text-stone-300 border-t border-stone-800 py-10 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
             
@@ -505,15 +568,15 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
               </div>
             </div>
 
-            {/* Col 3: Social & Portal Links */}
+            {/* Col 3: Social & Coordinator Support */}
             <div className="space-y-3 text-xs">
-              <h4 className="text-sm font-bold text-white">Connect & Follow</h4>
+              <h4 className="text-sm font-bold text-white">Connect & Student Support</h4>
               <div className="flex items-center gap-3">
                 <a 
-                  href="https://instagram.com" 
+                  href="https://www.instagram.com/ici.sustainable.engineers/" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-8 h-8 rounded-xl bg-stone-800 hover:bg-emerald-900 text-stone-300 hover:text-white flex items-center justify-center transition-colors"
+                  className="w-9 h-9 rounded-xl bg-stone-800 hover:bg-emerald-800 text-stone-300 hover:text-white flex items-center justify-center transition-colors"
                   aria-label="Instagram"
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -521,10 +584,10 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
                   </svg>
                 </a>
                 <a 
-                  href="https://linkedin.com" 
+                  href="https://www.linkedin.com/in/ici-sustainable-engineers-club-civil-mkce-587b09437/" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-8 h-8 rounded-xl bg-stone-800 hover:bg-emerald-900 text-stone-300 hover:text-white flex items-center justify-center transition-colors"
+                  className="w-9 h-9 rounded-xl bg-stone-800 hover:bg-emerald-800 text-stone-300 hover:text-white flex items-center justify-center transition-colors"
                   aria-label="LinkedIn"
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -539,15 +602,26 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
                       onNavigateHome();
                     }
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-white font-semibold flex items-center gap-1.5"
+                  className="px-3 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-white font-semibold flex items-center gap-1.5"
                 >
                   <span>Civil Connect Portal</span>
                   <ExternalLink className="w-3 h-3 text-emerald-400" />
                 </a>
               </div>
-              <p className="text-[11px] text-stone-500">
-                Official registration module for SUSTAINOVA 2026.
-              </p>
+
+              {/* Coordinator Direct Link Bar in Footer */}
+              <div className="pt-2 text-stone-400 space-y-1">
+                <div className="text-white font-bold">Harish Pranav S (Coordinator)</div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <a href="tel:7845693765" className="hover:text-emerald-400 flex items-center gap-1 font-mono font-bold">
+                    <Phone className="w-3 h-3 text-emerald-400" /> 7845693765
+                  </a>
+                  <span>•</span>
+                  <a href="mailto:harishspranav259@gmail.com" className="hover:text-emerald-400 flex items-center gap-1">
+                    <Mail className="w-3 h-3 text-emerald-400" /> harishspranav259@gmail.com
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -626,14 +700,58 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
                 <p className="text-[11px] text-stone-500">
                   Searches directly against the institutional roster (~98 students).
                 </p>
+
+                {/* Direct Coordinator Helpdesk Box Below Search Field */}
+                <div className="p-3 bg-emerald-50/70 border border-emerald-200/90 rounded-2xl text-xs space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-emerald-950 font-bold text-[11px]">
+                    <HelpCircle className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                    <span>Facing any issues or your detail is not available in the website?</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs">
+                    <span className="font-extrabold text-stone-900">Kindly contact HARISH PRANAV S:</span>
+                    <a
+                      href="tel:7845693765"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg text-[11px] transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <Phone className="w-3 h-3" />
+                      <span>7845693765</span>
+                    </a>
+                    <a
+                      href="mailto:harishspranav259@gmail.com"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-emerald-100 text-emerald-950 border border-emerald-300 font-semibold rounded-lg text-[11px] transition-colors cursor-pointer"
+                    >
+                      <Mail className="w-3 h-3 text-emerald-700" />
+                      <span>harishspranav259@gmail.com</span>
+                    </a>
+                  </div>
+                </div>
               </div>
 
-              {/* Error / Not Found Message */}
+              {/* Error / Not Found Message with One-Click Contact */}
               {searchError && (
-                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2.5 text-rose-800 text-xs animate-shake">
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                  <div className="flex-1 font-semibold">
-                    {searchError}
+                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col gap-2 text-rose-800 text-xs animate-shake">
+                  <div className="flex items-start gap-2.5 font-semibold">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      {searchError}
+                    </div>
+                  </div>
+                  <div className="pl-6 pt-1 text-[11px] text-stone-700 flex flex-wrap items-center gap-2 border-t border-rose-200/60 mt-1">
+                    <span className="font-bold">Contact Harish Pranav S for immediate registration assistance:</span>
+                    <a 
+                      href="tel:7845693765" 
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-lg text-[11px] font-mono transition-colors"
+                    >
+                      <Phone className="w-3 h-3" />
+                      <span>7845693765</span>
+                    </a>
+                    <a 
+                      href="mailto:harishspranav259@gmail.com" 
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100 text-rose-900 border border-rose-300 font-semibold rounded-lg text-[11px] transition-colors"
+                    >
+                      <Mail className="w-3 h-3 text-rose-700" />
+                      <span>harishspranav259@gmail.com</span>
+                    </a>
                   </div>
                 </div>
               )}
