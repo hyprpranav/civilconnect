@@ -23,6 +23,7 @@ import { PasswordChangeModal } from '../common/PasswordChangeModal';
 import { InterviewEvaluationModal } from '../common/InterviewEvaluationModal';
 import { TeamsManagerView } from '../common/TeamsManagerView';
 import { ExportCenterView } from '../admin/ExportCenterView';
+import { EventsManagerView } from '../admin/EventsManagerView';
 import { 
   Users, 
   Search, 
@@ -77,20 +78,20 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
   onTabChange,
   onUserUpdated
 }) => {
-  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements' | 'teams' | 'export'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements' | 'teams' | 'export' | 'events'>('students');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   React.useEffect(() => {
     if (externalTab) {
       if (externalTab === 'dashboard') {
         setActiveTab('students');
-      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff', 'profile', 'announcements', 'teams', 'export'].includes(externalTab)) {
+      } else if (['students', 'analytics', 'requests', 'addStudent', 'staff', 'profile', 'announcements', 'teams', 'export', 'events'].includes(externalTab)) {
         setActiveTab(externalTab as any);
       }
     }
   }, [externalTab]);
 
-  const handleTabChange = (tab: 'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements' | 'teams' | 'export') => {
+  const handleTabChange = (tab: 'students' | 'analytics' | 'requests' | 'addStudent' | 'staff' | 'profile' | 'announcements' | 'teams' | 'export' | 'events') => {
     setActiveTab(tab);
     onTabChange?.(tab);
   };
@@ -474,6 +475,16 @@ export const OfficerDashboard: React.FC<OfficerDashboardProps> = ({
           roleLabel="Faculty Officer"
         />
       </div>
+    );
+  }
+
+  if (activeTab === 'events') {
+    return (
+      <EventsManagerView
+        currentUser={user}
+        students={students}
+        onRefreshData={onRefreshData}
+      />
     );
   }
 

@@ -371,3 +371,59 @@ export interface PendingAccountRequest {
   approvedAt?: string;
   rejectionReason?: string;
 }
+
+export type EventRegistrationStatus = 'open' | 'closed' | 'upcoming';
+export type EventWillingness = 'WILLING' | 'NOT_WILLING';
+export type AttendanceStatus = 'PRESENT' | 'ABSENT';
+
+export interface EventItem {
+  id: string;
+  name: string;
+  slug?: string;
+  description: string;
+  date: string; // e.g. "2026-11-11" or "11 November 2026"
+  startTime: string; // e.g. "09:00 AM"
+  endTime: string; // e.g. "04:00 PM"
+  venue: string; // e.g. "Ramanujan Hall, MKCE"
+  resourcePerson: string; // e.g. "Dr. G. Balaji"
+  resourcePersonDesignation: string; // e.g. "Assistant Professor & HoD"
+  resourcePersonDepartment: string; // e.g. "Civil Engineering, MKCE"
+  registrationStatus: EventRegistrationStatus;
+  organizer?: string;
+  club?: string;
+  bannerUrl?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface EventRegistration {
+  id: string; // composite `${eventId}_${studentId}`
+  eventId: string;
+  studentId: string; // normalized register number
+  studentRegisterNumber: string;
+  studentName: string;
+  studentDepartment: string;
+  studentYear?: string;
+  studentClub?: string;
+  willingness: EventWillingness;
+  registeredAt: string;
+  ipAddress?: string;
+  notes?: string;
+}
+
+export interface EventAttendanceRecord {
+  id: string; // composite `${eventId}_${studentId}`
+  eventId: string;
+  studentId: string;
+  studentRegisterNumber: string;
+  studentName: string;
+  studentDepartment: string;
+  studentYear?: string;
+  status: AttendanceStatus;
+  markedByUid: string;
+  markedByName: string;
+  markedByRole: UserRole | string;
+  markedAt: string;
+  notes?: string;
+}
+

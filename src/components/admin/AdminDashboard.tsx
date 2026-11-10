@@ -27,6 +27,7 @@ import { PasswordChangeModal } from '../common/PasswordChangeModal';
 import { AnnouncementsManagerView } from '../common/AnnouncementsManagerView';
 import { InterviewEvaluationModal } from '../common/InterviewEvaluationModal';
 import { TeamsManagerView } from '../common/TeamsManagerView';
+import { EventsManagerView } from './EventsManagerView';
 import { 
   Users, 
   Search, 
@@ -88,7 +89,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUserUpdated
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'analytics' | 'students' | 'addStudent' | 'bulkImport' | 'requests' | 'teams' | 'announcements' | 'audit' | 'archive' | 'settings' | 'export' | 'profile' | 'tickets' | 'staff'
+    'overview' | 'analytics' | 'students' | 'addStudent' | 'bulkImport' | 'requests' | 'teams' | 'announcements' | 'audit' | 'archive' | 'settings' | 'export' | 'profile' | 'tickets' | 'staff' | 'events'
   >('overview');
 
   useEffect(() => {
@@ -98,6 +99,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       else if (externalTab === 'builder') setActiveTab('teams');
       else if (externalTab === 'tickets') setActiveTab('tickets');
       else if (externalTab === 'staff') setActiveTab('staff');
+      else if (externalTab === 'events') setActiveTab('events');
       else setActiveTab(externalTab as any);
     }
   }, [externalTab]);
@@ -661,6 +663,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     document.body.removeChild(link);
   };
 
+  if (activeTab === 'events') {
+    return (
+      <EventsManagerView
+        currentUser={user}
+        students={students}
+        onRefreshData={onRefreshData}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Master Control Center Header (Screenshot 1) */}
@@ -689,8 +701,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      {/* Top 5 Stat Cards (Screenshot 1) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
+      {/* Top 4 Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Card 1: Students */}
         <div className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-2.5 sm:gap-4">
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -735,17 +747,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="min-w-0">
             <p className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">{teams.length}</p>
             <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Teams</p>
-          </div>
-        </div>
-
-        {/* Card 5: Events */}
-        <div className="col-span-2 sm:col-span-1 bg-white p-3 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-2.5 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
-            <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">{announcements.length}</p>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Events & Notices</p>
           </div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { storageService } from './services/storageService';
 import { AppSidebar } from './components/common/AppSidebar';
 import { LandingPage } from './components/landing/LandingPage';
 import { LoginPage } from './components/auth/LoginPage';
+import { SustainovaLandingPage } from './components/sustainova/SustainovaLandingPage';
 import { StudentDashboard } from './components/student/StudentDashboard';
 import { OfficerDashboard } from './components/officer/OfficerDashboard';
 import { AdminDashboard } from './components/admin/AdminDashboard';
@@ -34,6 +35,33 @@ export const App: React.FC = () => {
   const [staffCount, setStaffCount] = useState<number>(1);
 
   const [isLoading, setIsLoading] = useState(true);
+
+  // Dedicated Route Handler for SUSTAINOVA (/sustainova)
+  const [isSustainovaRoute, setIsSustainovaRoute] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname.toLowerCase();
+      return p === '/sustainova' || p.startsWith('/sustainova/');
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      if (typeof window !== 'undefined') {
+        const p = window.location.pathname.toLowerCase();
+        setIsSustainovaRoute(p === '/sustainova' || p.startsWith('/sustainova/'));
+      }
+    };
+    window.addEventListener('popstate', handleRouteChange);
+    return () => window.removeEventListener('popstate', handleRouteChange);
+  }, []);
+
+  const handleNavigateFromSustainovaToHome = () => {
+    if (typeof window !== 'undefined' && window.history) {
+      window.history.pushState({}, '', '/');
+    }
+    setIsSustainovaRoute(false);
+  };
 
   useEffect(() => {
     loadAppInitialState();
@@ -203,6 +231,7 @@ export const App: React.FC = () => {
       case 'students': return 'Students Roster';
       case 'teams': return 'Team Formations';
       case 'analytics': return 'Visual Analytics & Charts';
+      case 'events': return 'Events Management';
       case 'export': return 'Export Center';
       case 'tickets': return 'Feedback & Issues Desk';
       case 'profile': return 'My Profile';
@@ -212,6 +241,15 @@ export const App: React.FC = () => {
       default: return tab;
     }
   };
+
+  // If on the dedicated /sustainova path, render SUSTAINOVA landing directly
+  if (isSustainovaRoute) {
+    return (
+      <SustainovaLandingPage
+        onNavigateHome={handleNavigateFromSustainovaToHome}
+      />
+    );
+  }
 
   if (isLoading) {
     return <PortalLoader message="CIVIL CONNECT" subMessage="Synchronizing real-time workspace..." />;
