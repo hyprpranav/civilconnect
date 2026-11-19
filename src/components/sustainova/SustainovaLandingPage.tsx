@@ -32,6 +32,94 @@ interface SustainovaLandingPageProps {
   onNavigateHome?: () => void;
 }
 
+interface TimeLeft {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  isLive: boolean;
+  isCompleted: boolean;
+}
+
+function parseEventDateTime(dateStr?: string, timeStr?: string): Date | null {
+  if (!dateStr) return null;
+  const cleanDate = dateStr.trim();
+  const cleanTime = (timeStr || '09:00 AM').trim();
+
+  // 1. Try direct string combination
+  let d = new Date(`${cleanDate} ${cleanTime}`);
+  if (!isNaN(d.getTime())) return d;
+
+  // 2. Try parsing numeric DD-MM-YYYY or DD/MM/YYYY
+  const parts = cleanDate.split(/[-/]/);
+  if (parts.length === 3) {
+    if (parts[2].length === 4) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      d = new Date(year, month, day);
+    } else if (parts[0].length === 4) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      d = new Date(year, month, day);
+    }
+  }
+
+  if (isNaN(d?.getTime())) {
+    d = new Date(cleanDate);
+  }
+
+  if (!isNaN(d.getTime())) {
+    const match = cleanTime.match(/(\d+):(\d+)(?:\s*(AM|PM))?/i);
+    if (match) {
+      let hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const meridian = match[3] ? match[3].toUpperCase() : null;
+      if (meridian === 'PM' && hours < 12) hours += 12;
+      if (meridian === 'AM' && hours === 12) hours = 0;
+      d.setHours(hours, minutes, 0, 0);
+    }
+    return d;
+  }
+  return null;
+}
+
+function calculateTimeLeft(dateStr?: string, startTimeStr?: string, endTimeStr?: string): TimeLeft {
+  if (!dateStr) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, isLive: false, isCompleted: false };
+  }
+
+  const targetDate = parseEventDateTime(dateStr, startTimeStr || '09:00 AM');
+  if (!targetDate) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, isLive: false, isCompleted: false };
+  }
+
+  const endDate = parseEventDateTime(dateStr, endTimeStr || '04:00 PM') || new Date(targetDate.getTime() + 7 * 3600 * 1000);
+
+  const now = new Date();
+  const diffToStart = targetDate.getTime() - now.getTime();
+  const diffToEnd = endDate.getTime() - now.getTime();
+
+  // If ongoing during the event hours
+  if (diffToStart <= 0 && diffToEnd > 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, isLive: true, isCompleted: false };
+  }
+
+  // If completed
+  if (diffToEnd <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, isLive: false, isCompleted: true };
+  }
+
+  const totalSeconds = Math.floor(diffToStart / 1000);
+  const days = Math.floor(totalSeconds / (3600 * 24));
+  const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+
+  return { days, hours, minutes, seconds, isLive: false, isCompleted: false };
+}
+
 export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
   onNavigateHome
 }) => {
@@ -53,6 +141,19 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState<boolean>(false);
   const [registeredWillingness, setRegisteredWillingness] = useState<'WILLING' | 'NOT_WILLING' | null>(null);
+
+  // Live Event Countdown Timer State
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => 
+    calculateTimeLeft(event.date, event.startTime, event.endTime)
+  );
+
+  useEffect(() => {
+    setTimeLeft(calculateTimeLeft(event.date, event.startTime, event.endTime));
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft(event.date, event.startTime, event.endTime));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [event.date, event.startTime, event.endTime]);
 
   useEffect(() => {
     // 1. Subscribe to Real-Time Event Details directly from Firebase Firestore
@@ -294,6 +395,77 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
             ? event.description.split(' - ').slice(1).join(' - ')
             : 'A dedicated institutional symposium exploring future-proof green infrastructure, circular building systems, eco-friendly concrete technologies, and sustainable industrial frameworks.'}
         </p>
+
+        {/* Live Event Countdown Timer (Days : Hours : Minutes : Seconds) */}
+        <div className="mt-5 sm:mt-6 w-full max-w-lg mx-auto">
+          {timeLeft.isCompleted ? (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-stone-100/90 border border-stone-300 text-stone-700 text-xs sm:text-sm font-bold shadow-2xs backdrop-blur-xs">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Event Successfully Concluded</span>
+            </div>
+          ) : timeLeft.isLive ? (
+            <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-emerald-600 text-white text-xs sm:text-sm font-black shadow-lg shadow-emerald-700/20 animate-pulse">
+              <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+              <span>EVENT IS LIVE NOW</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100/90 border border-emerald-200/90 text-emerald-900 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider mb-2.5 shadow-2xs backdrop-blur-xs">
+                <Clock className="w-3.5 h-3.5 text-emerald-700 animate-spin" style={{ animationDuration: '6s' }} />
+                <span>Time Left For Event</span>
+              </div>
+
+              {/* 4 Flip/Glass Cards: Days, Hours, Minutes, Seconds */}
+              <div className="flex items-center justify-center gap-2 sm:gap-3">
+                {/* Days */}
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 border border-emerald-900/10 shadow-xs min-w-[58px] sm:min-w-[74px] flex flex-col items-center">
+                  <span className="text-xl sm:text-3xl font-black font-mono text-emerald-950 tracking-tight leading-none">
+                    {String(timeLeft.days).padStart(2, '0')}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-700 mt-1">
+                    Days
+                  </span>
+                </div>
+
+                <span className="text-base sm:text-xl font-black text-emerald-600/70 -mt-2.5 sm:-mt-3">:</span>
+
+                {/* Hours */}
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 border border-emerald-900/10 shadow-xs min-w-[58px] sm:min-w-[74px] flex flex-col items-center">
+                  <span className="text-xl sm:text-3xl font-black font-mono text-emerald-950 tracking-tight leading-none">
+                    {String(timeLeft.hours).padStart(2, '0')}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-700 mt-1">
+                    Hours
+                  </span>
+                </div>
+
+                <span className="text-base sm:text-xl font-black text-emerald-600/70 -mt-2.5 sm:-mt-3">:</span>
+
+                {/* Minutes */}
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 border border-emerald-900/10 shadow-xs min-w-[58px] sm:min-w-[74px] flex flex-col items-center">
+                  <span className="text-xl sm:text-3xl font-black font-mono text-emerald-950 tracking-tight leading-none">
+                    {String(timeLeft.minutes).padStart(2, '0')}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-700 mt-1">
+                    Minutes
+                  </span>
+                </div>
+
+                <span className="text-base sm:text-xl font-black text-emerald-600/70 -mt-2.5 sm:-mt-3">:</span>
+
+                {/* Seconds */}
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 border border-emerald-900/10 shadow-xs min-w-[58px] sm:min-w-[74px] flex flex-col items-center">
+                  <span className="text-xl sm:text-3xl font-black font-mono text-emerald-600 tracking-tight leading-none">
+                    {String(timeLeft.seconds).padStart(2, '0')}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-700 mt-1">
+                    Seconds
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Prominent Green CTA Button */}
         <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
