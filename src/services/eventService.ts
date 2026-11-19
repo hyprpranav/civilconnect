@@ -221,6 +221,30 @@ class EventService {
     }
   }
 
+  public subscribeToEvent(eventId: string, callback: (event: EventItem | null) => void): () => void {
+    const db = getFirestoreDb();
+    if (!db) {
+      this.getEventById(eventId).then(callback);
+      return () => {};
+    }
+
+    try {
+      return onSnapshot(doc(db, 'events', eventId), (snap) => {
+        if (snap.exists()) {
+          callback(snap.data() as EventItem);
+        } else {
+          this.getEventById(eventId).then(callback);
+        }
+      }, (err) => {
+        console.warn('[EventService] subscribeToEvent error:', err);
+        this.getEventById(eventId).then(callback);
+      });
+    } catch {
+      this.getEventById(eventId).then(callback);
+      return () => {};
+    }
+  }
+
   // ==========================================
   // REGISTRATIONS MANAGEMENT
   // ==========================================
@@ -374,6 +398,83 @@ class EventService {
     } catch {
       this.getRegistrations(eventId).then(callback);
       return () => {};
+    }
+  }
+
+  public async deleteRegistration(id: string): Promise<void> {
+    const db = getFirestoreDb();
+    if (!db) {
+      throw new Error('Cloud database connection is not available.');
+    }
+
+    try {
+      await deleteDoc(doc(db, 'event_registrations', id));
+
+      // Clean local cache
+      const stored = localStorage.getItem(STORAGE_KEYS.REGISTRATIONS);
+      if (stored) {
+        const parsed = JSON.parse(stored) as EventRegistration[];
+        localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(parsed.filter(r => r.id !== id)));
+      }
+    } catch (err: any) {
+      console.error('[EventService] deleteRegistration error:', err);
+      throw new Error(`Failed to delete registration: ${err?.message || 'Database error'}`);
+    }
+  }
+
+  public async deleteAllRegistrationsForEvent(eventId: string): Promise<{ success: boolean; deletedCount: number }> {
+    const db = getFirestoreDb();
+    if (!db) {
+      throw new Error('Cloud database connection is not available. Please verify your internet connection.');
+    }
+
+    try {
+      let deletedCount = 0;
+
+      // 1. Delete all matching documents from event_registrations in Firebase Firestore
+      const regSnap = await getDocs(collection(db, 'event_registrations'));
+      const regDeletions: Promise<void>[] = [];
+      regSnap.forEach(d => {
+        const data = d.data();
+        if (data.eventId === eventId || d.id.startsWith(`${eventId}_`)) {
+          regDeletions.push(deleteDoc(doc(db, 'event_registrations', d.id)));
+          deletedCount++;
+        }
+      });
+      await Promise.all(regDeletions);
+
+      // 2. Delete all matching documents from event_attendance in Firebase Firestore
+      const attSnap = await getDocs(collection(db, 'event_attendance'));
+      const attDeletions: Promise<void>[] = [];
+      attSnap.forEach(d => {
+        const data = d.data();
+        if (data.eventId === eventId || d.id.startsWith(`${eventId}_`)) {
+          attDeletions.push(deleteDoc(doc(db, 'event_attendance', d.id)));
+        }
+      });
+      await Promise.all(attDeletions);
+
+      // 3. Purge local storage caches so no stale data remains locally
+      try {
+        const storedRegs = localStorage.getItem(STORAGE_KEYS.REGISTRATIONS);
+        if (storedRegs) {
+          const parsed = JSON.parse(storedRegs) as EventRegistration[];
+          localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(parsed.filter(r => r.eventId !== eventId)));
+        }
+
+        const storedAtt = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
+        if (storedAtt) {
+          const parsed = JSON.parse(storedAtt) as EventAttendanceRecord[];
+          localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(parsed.filter(a => a.eventId !== eventId)));
+        }
+      } catch (e) {
+        console.warn('[EventService] Cache purge note:', e);
+      }
+
+      return { success: true, deletedCount };
+    } catch (err: any) {
+      console.error('[EventService] deleteAllRegistrationsForEvent error:', err);
+      throw new Error(`Failed to delete event registrations from Firebase Firestore: ${err?.message || 'Database error'}`);
     }
   }
 

@@ -55,8 +55,8 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
   const [registeredWillingness, setRegisteredWillingness] = useState<'WILLING' | 'NOT_WILLING' | null>(null);
 
   useEffect(() => {
-    // 1. Fetch Event Details
-    eventService.getEventById('sustainova-2026').then(e => {
+    // 1. Subscribe to Real-Time Event Details directly from Firebase Firestore
+    const unsubEvent = eventService.subscribeToEvent('sustainova-2026', (e) => {
       if (e) setEvent(e);
     });
 
@@ -67,11 +67,14 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
     });
 
     // 3. Subscribe to registrations for real-time duplicate checks
-    const unsub = eventService.subscribeToRegistrations('sustainova-2026', (regs) => {
+    const unsubRegs = eventService.subscribeToRegistrations('sustainova-2026', (regs) => {
       setRegistrations(regs);
     });
 
-    return () => unsub();
+    return () => {
+      unsubEvent();
+      unsubRegs();
+    };
   }, []);
 
   const handleOpenRegister = () => {
@@ -268,34 +271,39 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
         {/* Organizer Badges */}
         <div className="inline-flex flex-wrap items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-xs border border-emerald-200/90 text-emerald-800 text-xs font-semibold mb-4 sm:mb-6 shadow-2xs">
           <Leaf className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
-          <span>ICI Sustainable Engineers Club</span>
+          <span>{event.organizer || 'ICI Sustainable Engineers Club'}</span>
           <span className="text-emerald-400">•</span>
-          <span>Under AAROH Student Club, MKCE</span>
+          <span>Under {event.club || 'AAROH Student Club, MKCE'}</span>
         </div>
 
         {/* Main Event Title */}
         <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-black text-emerald-950 tracking-tight leading-tight">
-          SUSTAINOVA
+          {event.name || 'SUSTAINOVA'}
         </h1>
 
         {/* Subtitle */}
         <p className="mt-3 sm:mt-4 text-lg xs:text-xl sm:text-2xl font-bold text-emerald-800 max-w-3xl mx-auto leading-snug">
-          Sustainable Innovation for Infrastructure and Industry
+          {event.description?.includes(' - ') 
+            ? event.description.split(' - ')[0] 
+            : (event.name === 'SUSTAINOVA' ? 'Sustainable Innovation for Infrastructure and Industry' : (event.description || 'Sustainable Innovation for Infrastructure and Industry'))}
         </p>
 
         {/* Short value highlight */}
         <p className="mt-3 text-xs sm:text-base text-stone-700 max-w-2xl mx-auto leading-relaxed">
-          A dedicated institutional symposium exploring future-proof green infrastructure, circular building systems, eco-friendly concrete technologies, and sustainable industrial frameworks.
+          {event.description?.includes(' - ')
+            ? event.description.split(' - ').slice(1).join(' - ')
+            : 'A dedicated institutional symposium exploring future-proof green infrastructure, circular building systems, eco-friendly concrete technologies, and sustainable industrial frameworks.'}
         </p>
 
         {/* Prominent Green CTA Button */}
         <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
           <button
             onClick={handleOpenRegister}
-            className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-lg hover:shadow-xl shadow-emerald-700/25 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2.5 cursor-pointer ring-4 ring-emerald-600/15"
+            disabled={event.registrationStatus === 'closed'}
+            className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-lg hover:shadow-xl shadow-emerald-700/25 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2.5 cursor-pointer ring-4 ring-emerald-600/15 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Sparkles className="w-5 h-5 text-emerald-200" />
-            <span>CLICK HERE TO REGISTER</span>
+            <span>{event.registrationStatus === 'closed' ? 'REGISTRATION CLOSED' : 'CLICK HERE TO REGISTER'}</span>
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>
@@ -303,15 +311,15 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
         {/* Quick event highlights ribbon */}
         <div className="mt-6 sm:mt-8 inline-flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs font-semibold text-stone-700 bg-white/90 backdrop-blur-xs py-2 px-4 rounded-xl border border-stone-200/80 shadow-2xs">
           <span className="flex items-center gap-1.5 text-emerald-900">
-            <Calendar className="w-3.5 h-3.5 text-emerald-600" /> 11 Nov 2026
+            <Calendar className="w-3.5 h-3.5 text-emerald-600" /> {event.date || '11 Nov 2026'}
           </span>
           <span className="text-stone-300">•</span>
           <span className="flex items-center gap-1.5 text-emerald-900">
-            <Clock className="w-3.5 h-3.5 text-emerald-600" /> 09:00 AM – 04:00 PM
+            <Clock className="w-3.5 h-3.5 text-emerald-600" /> {event.startTime && event.endTime ? `${event.startTime} – ${event.endTime}` : (event.startTime || '09:00 AM – 04:00 PM')}
           </span>
           <span className="text-stone-300">•</span>
           <span className="flex items-center gap-1.5 text-emerald-900">
-            <MapPin className="w-3.5 h-3.5 text-emerald-600" /> Ramanujan Hall, MKCE
+            <MapPin className="w-3.5 h-3.5 text-emerald-600" /> {event.venue || 'Ramanujan Hall, MKCE'}
           </span>
         </div>
       </section>
@@ -349,20 +357,20 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
             <div className="space-y-3 text-xs sm:text-sm">
               <div className="flex items-start justify-between py-2 border-b border-stone-100">
                 <span className="font-semibold text-stone-500">Event Name:</span>
-                <span className="font-bold text-emerald-900 text-right">SUSTAINOVA</span>
+                <span className="font-bold text-emerald-900 text-right">{event.name || 'SUSTAINOVA'}</span>
               </div>
               <div className="flex items-start justify-between py-2 border-b border-stone-100">
                 <span className="font-semibold text-stone-500">Event Date:</span>
-                <span className="font-bold text-stone-900 text-right">11 November 2026</span>
+                <span className="font-bold text-stone-900 text-right">{event.date || '11 November 2026'}</span>
               </div>
               <div className="flex items-start justify-between py-2 border-b border-stone-100">
                 <span className="font-semibold text-stone-500">Event Time:</span>
-                <span className="font-bold text-stone-900 text-right">09:00 AM – 04:00 PM</span>
+                <span className="font-bold text-stone-900 text-right">{event.startTime && event.endTime ? `${event.startTime} – ${event.endTime}` : (event.startTime || '09:00 AM – 04:00 PM')}</span>
               </div>
               <div className="flex items-start justify-between py-2">
                 <span className="font-semibold text-stone-500">Venue:</span>
                 <span className="font-bold text-emerald-800 text-right flex items-center gap-1 justify-end">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600" /> Ramanujan Hall, MKCE
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600" /> {event.venue || 'Ramanujan Hall, MKCE'}
                 </span>
               </div>
             </div>
@@ -383,19 +391,19 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
             <div className="space-y-3 text-xs sm:text-sm">
               <div className="flex items-start justify-between py-2 border-b border-stone-100">
                 <span className="font-semibold text-stone-500">Resource Person:</span>
-                <span className="font-extrabold text-stone-900 text-right">Dr. G. Balaji</span>
+                <span className="font-extrabold text-stone-900 text-right">{event.resourcePerson || 'Dr. G. Balaji'}</span>
               </div>
               <div className="flex items-start justify-between py-2 border-b border-stone-100">
                 <span className="font-semibold text-stone-500">Designation:</span>
-                <span className="font-bold text-stone-800 text-right">Assistant Professor & HoD</span>
+                <span className="font-bold text-stone-800 text-right">{event.resourcePersonDesignation || 'Assistant Professor & HoD'}</span>
               </div>
               <div className="flex items-start justify-between py-2 border-b border-stone-100">
                 <span className="font-semibold text-stone-500">Department:</span>
-                <span className="font-bold text-emerald-900 text-right">Civil Engineering, MKCE</span>
+                <span className="font-bold text-emerald-900 text-right">{event.resourcePersonDepartment || 'Civil Engineering, MKCE'}</span>
               </div>
               <div className="flex items-start justify-between py-2">
                 <span className="font-semibold text-stone-500">Host Organization:</span>
-                <span className="font-bold text-stone-700 text-right">ICI Sustainable Engineers Club</span>
+                <span className="font-bold text-stone-700 text-right">{event.organizer || 'ICI Sustainable Engineers Club'}</span>
               </div>
             </div>
           </div>
@@ -419,11 +427,13 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
             </div>
 
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-4">
-              About SUSTAINOVA 2026
+              About {event.name || 'SUSTAINOVA'}
             </h2>
 
             <p className="text-xs sm:text-base text-emerald-100/95 leading-relaxed space-y-3 font-normal">
-              SUSTAINOVA brings together aspiring student engineers and innovators to address critical challenges in modern infrastructure and industrial sustainability. The session equips participants with actionable insights into low-carbon building materials, renewable lifecycle design, sustainable concrete matrixes, and smart environmental stewardship aligned with global green engineering standards.
+              {event.description?.includes(' - ')
+                ? event.description.split(' - ').slice(1).join(' - ')
+                : (event.description || 'SUSTAINOVA brings together aspiring student engineers and innovators to address critical challenges in modern infrastructure and industrial sustainability. The session equips participants with actionable insights into low-carbon building materials, renewable lifecycle design, sustainable concrete matrixes, and smart environmental stewardship aligned with global green engineering standards.')}
             </p>
 
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5 border-t border-emerald-800/70 text-xs text-emerald-200">
@@ -458,20 +468,21 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
           </div>
 
           <h2 className="text-xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
-            Join the Movement for Sustainable Infrastructure
+            Join the Movement for {event.name || 'Sustainable Infrastructure'}
           </h2>
 
           <p className="text-xs sm:text-sm text-stone-600 max-w-xl mx-auto leading-relaxed">
-            Existing MKCE students across departments are invited to confirm their participation. Registration requires verifying your student record from the institutional database.
+            Existing MKCE students across departments are invited to confirm their participation for {event.name || 'SUSTAINOVA'}. Registration requires verifying your student record from the institutional database.
           </p>
 
           <div className="pt-1">
             <button
               onClick={handleOpenRegister}
-              className="px-8 py-3.5 sm:py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-lg hover:shadow-xl shadow-emerald-700/20 hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center gap-2.5 cursor-pointer ring-4 ring-emerald-600/10"
+              disabled={event.registrationStatus === 'closed'}
+              className="px-8 py-3.5 sm:py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-lg hover:shadow-xl shadow-emerald-700/20 hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center gap-2.5 cursor-pointer ring-4 ring-emerald-600/10 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Sparkles className="w-5 h-5 text-emerald-200" />
-              <span>CLICK HERE TO REGISTER</span>
+              <span>{event.registrationStatus === 'closed' ? 'REGISTRATION CLOSED' : 'CLICK HERE TO REGISTER'}</span>
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
@@ -653,7 +664,7 @@ export const SustainovaLandingPage: React.FC<SustainovaLandingPageProps> = ({
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-sm sm:text-base font-bold truncate leading-tight">
-                    SUSTAINOVA 2026 Registration
+                    {event.name || 'SUSTAINOVA'} Registration
                   </h3>
                   <p className="text-[11px] text-emerald-200 truncate">
                     Student Search & Participation Confirmation

@@ -103,6 +103,27 @@
   }
 }
 
+/* Portal Loading Screen Responsive Background Layer */
+.portal-loader-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url('/bgweb.png');
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  transition: background-image 0.3s ease-in-out;
+}
+
+@media (max-width: 768px) {
+  .portal-loader-bg {
+    background-image: url('/bgmobile.png');
+    background-size: cover;
+    background-position: center top;
+  }
+}
+
 /* SUSTAINOVA Event Dedicated Fullscreen Responsive Background Layer */
 .sustainova-bg-layer {
   position: fixed;
